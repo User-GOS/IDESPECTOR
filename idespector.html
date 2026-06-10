@@ -1910,6 +1910,12 @@ function save(){try{localStorage.setItem('idespector',JSON.stringify(state));}ca
 const APP_VERSION='29-outlook-v1';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
+function isLocalDev(){
+  return location.hostname==='localhost'||location.hostname==='127.0.0.1';
+}
+function isHostedDeploy(){
+  return location.protocol.startsWith('http')&&!isLocalDev();
+}
 function load(){
   try{
     const d=localStorage.getItem('idespector');
@@ -2832,19 +2838,24 @@ function telegramChatIdError(id){
 }
 async function checkServer(){
   if(location.protocol==='file:') return {ok:false,error:`Abra pelo servidor, não o arquivo HTML direto. Execute iniciar.bat → ${SERVER_URL}`};
-  const port=location.port?parseInt(location.port,10):(location.protocol==='https:'?443:80);
-  if(port!==SERVER_PORT) return {ok:false,error:`Porta errada (${port}). Feche abas antigas e abra ${SERVER_URL}`};
+  if(isLocalDev()){
+    const port=location.port?parseInt(location.port,10):(location.protocol==='https:'?443:80);
+    if(port!==SERVER_PORT) return {ok:false,error:`Porta errada (${port}). Feche abas antigas e abra ${SERVER_URL}`};
+  }
+  const offlineMsg=isHostedDeploy()?'API offline. Aguarde o redeploy na Vercel.':'Servidor offline. Execute iniciar.bat na pasta do projeto.';
   try{
     const res=await fetch('/api/health',{method:'GET',cache:'no-store'});
-    if(!res.ok) return {ok:false,error:'Servidor offline. Execute iniciar.bat na pasta do projeto.'};
+    if(!res.ok) return {ok:false,error:offlineMsg};
     const data=await res.json().catch(()=>({}));
-    return data.ok?{ok:true}:{ok:false,error:'Servidor offline. Execute iniciar.bat na pasta do projeto.'};
+    return data.ok?{ok:true}:{ok:false,error:offlineMsg};
   }catch{
-    return {ok:false,error:'Servidor offline. Execute iniciar.bat na pasta do projeto.'};
+    return {ok:false,error:offlineMsg};
   }
 }
 function serverOfflineMsg(extra=''){
-  const base=`Servidor offline. Dê duplo clique em <strong>iniciar.bat</strong> e abra <a href="${SERVER_URL}" target="_blank" rel="noopener">${SERVER_URL}</a>`;
+  const base=isHostedDeploy()
+    ?'API indisponível no momento. Tente recarregar em alguns segundos.'
+    :`Servidor offline. Dê duplo clique em <strong>iniciar.bat</strong> e abra <a href="${SERVER_URL}" target="_blank" rel="noopener">${SERVER_URL}</a>`;
   return extra?base+'<br><small>'+extra+'</small>':base;
 }
 
@@ -3132,7 +3143,9 @@ const OUTLOOK_PRESETS={
 let outlookSyncTimer=null;
 
 function getOutlookRedirectUri(){
-  return window.location.origin+window.location.pathname;
+  if(!location.protocol.startsWith('http')) return SERVER_URL.replace('/idespector.html','/');
+  if(isLocalDev()) return window.location.origin+'/idespector.html';
+  return window.location.origin+'/';
 }
 
 function outlookRandomString(len=64){
@@ -3858,7 +3871,7 @@ async function connectWhatsApp(){
       showToast('❌','WhatsApp',hint);
     }
   }catch{
-    setWaStatus('err','❌ Execute <strong>iniciar.bat</strong> e abra http://localhost:8772/idespector.html');
+    setWaStatus('err',isHostedDeploy()?'❌ API offline. Recarregue a página após o deploy na Vercel.':'❌ Execute <strong>iniciar.bat</strong> e abra http://localhost:8772/idespector.html');
   }
 }
 

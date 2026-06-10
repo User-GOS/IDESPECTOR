@@ -30,12 +30,17 @@ Painel pessoal de produtividade — tarefas, lembretes, alarmes, agenda, notas e
 
 ## Início rápido
 
+### Vercel (online)
+
+1. Importe o repositório em [vercel.com/new](https://vercel.com/new)
+2. Deploy automático — acesse a URL gerada (ex: `https://idespector.vercel.app`)
+3. Para **Outlook**, adicione no Azure o Redirect URI: `https://SUA-URL.vercel.app/`
+
+### Local (Windows)
+
 ```bat
-# 1. Clone o repositório
 git clone https://github.com/User-GOS/IDESPECTOR.git
 cd IDESPECTOR
-
-# 2. Inicie o servidor
 iniciar.bat
 ```
 
@@ -46,8 +51,10 @@ O app abre em: **http://localhost:8772/idespector.html**
 ```
 IDESPECTOR/
 ├── idespector.html   # App completa (HTML + CSS + JS)
-├── server.ps1        # Servidor local + APIs (WhatsApp, Telegram, Outlook ICS)
-├── iniciar.bat       # Atalho para subir o servidor
+├── vercel.json       # Roteamento Vercel (raiz → app)
+├── api/              # Serverless functions (Vercel)
+├── server.ps1        # Servidor local Windows
+├── iniciar.bat       # Atalho para subir o servidor local
 ├── publicar-github.ps1
 ├── README.md
 └── LICENSE
