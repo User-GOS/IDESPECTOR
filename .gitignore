@@ -1,0 +1,27 @@
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs e temporários
+*.log
+*.tmp
+.cache/
+
+# Segredos locais (nunca commitar)
+.env
+.env.*
+secrets.json
+*.pem
+credentials.json
+
+# Dados locais do usuário (ficam no localStorage do navegador)
+data/
+backup/
