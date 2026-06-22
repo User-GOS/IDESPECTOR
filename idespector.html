@@ -76,15 +76,126 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* BG — mesh sutil da marca */
-  body::before {
-    content:'';
-    position: fixed; inset:0;
+  /* BG — animado (paleta idespector) */
+  body::before { display:none; }
+  .ambient-bg {
+    position:fixed; inset:0; z-index:0;
+    pointer-events:none; overflow:hidden;
+    background:var(--bg-primary);
+  }
+  .ambient-mesh {
+    position:absolute; inset:-45%;
     background:
-      radial-gradient(ellipse 90% 60% at 0% -10%, rgba(168,85,247,0.16) 0%, transparent 50%),
-      radial-gradient(ellipse 70% 50% at 100% 0%, rgba(192,132,252,0.08) 0%, transparent 45%),
-      radial-gradient(ellipse 50% 40% at 50% 100%, rgba(124,58,237,0.1) 0%, transparent 50%);
-    pointer-events:none; z-index:0;
+      radial-gradient(circle at 18% 22%, rgba(168,85,247,0.22) 0%, transparent 42%),
+      radial-gradient(circle at 82% 12%, rgba(192,132,252,0.14) 0%, transparent 38%),
+      radial-gradient(circle at 62% 88%, rgba(124,58,237,0.18) 0%, transparent 44%),
+      radial-gradient(circle at 28% 72%, rgba(168,85,247,0.1) 0%, transparent 40%);
+    animation:ambientMeshDrift 26s ease-in-out infinite alternate;
+  }
+  @keyframes ambientMeshDrift {
+    0% { transform:translate(0,0) scale(1) rotate(0deg); }
+    50% { transform:translate(2%,-1.5%) scale(1.04) rotate(1.5deg); }
+    100% { transform:translate(-2.5%,2%) scale(1.02) rotate(-1deg); }
+  }
+  .ambient-grid {
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(168,85,247,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(168,85,247,0.045) 1px, transparent 1px);
+    background-size:56px 56px;
+    mask-image:radial-gradient(ellipse 85% 75% at 50% 45%, #000 20%, transparent 72%);
+    animation:ambientGridPan 48s linear infinite;
+  }
+  @keyframes ambientGridPan {
+    0% { background-position:0 0, 0 0; }
+    100% { background-position:56px 56px, 56px 56px; }
+  }
+  .ambient-orb {
+    position:absolute; border-radius:50%;
+    filter:blur(70px); opacity:0.55;
+    will-change:transform;
+  }
+  .ambient-orb.o1 {
+    width:min(52vw,520px); height:min(52vw,520px);
+    top:-12%; left:-8%;
+    background:rgba(168,85,247,0.28);
+    animation:orbFloat1 20s ease-in-out infinite;
+  }
+  .ambient-orb.o2 {
+    width:min(40vw,400px); height:min(40vw,400px);
+    top:35%; right:-10%;
+    background:rgba(192,132,252,0.2);
+    animation:orbFloat2 24s ease-in-out infinite;
+  }
+  .ambient-orb.o3 {
+    width:min(36vw,360px); height:min(36vw,360px);
+    bottom:-8%; left:30%;
+    background:rgba(124,58,237,0.22);
+    animation:orbFloat3 22s ease-in-out infinite;
+  }
+  @keyframes orbFloat1 {
+    0%,100% { transform:translate(0,0) scale(1); }
+    50% { transform:translate(48px,36px) scale(1.1); }
+  }
+  @keyframes orbFloat2 {
+    0%,100% { transform:translate(0,0) scale(1); }
+    50% { transform:translate(-40px,44px) scale(1.06); }
+  }
+  @keyframes orbFloat3 {
+    0%,100% { transform:translate(0,0) scale(1); }
+    50% { transform:translate(32px,-38px) scale(1.08); }
+  }
+  .ambient-scan {
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, transparent 0%, rgba(168,85,247,0.03) 48%, transparent 100%);
+    background-size:100% 220%;
+    animation:ambientScan 9s ease-in-out infinite;
+  }
+  @keyframes ambientScan {
+    0% { background-position:0 -120%; }
+    100% { background-position:0 120%; }
+  }
+  .ambient-glyphs {
+    position:absolute; inset:0;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:500;
+  }
+  .ambient-glyph {
+    position:absolute;
+    color:rgba(192,132,252,0.14);
+    text-shadow:0 0 28px rgba(168,85,247,0.25);
+    white-space:nowrap;
+    animation:glyphRise linear infinite;
+    user-select:none;
+  }
+  .ambient-glyph.g1 { left:8%; font-size:22px; animation-duration:28s; animation-delay:0s; }
+  .ambient-glyph.g2 { left:22%; font-size:16px; animation-duration:34s; animation-delay:-6s; }
+  .ambient-glyph.g3 { left:38%; font-size:20px; animation-duration:30s; animation-delay:-12s; }
+  .ambient-glyph.g4 { left:55%; font-size:14px; animation-duration:36s; animation-delay:-4s; }
+  .ambient-glyph.g5 { left:68%; font-size:18px; animation-duration:32s; animation-delay:-18s; }
+  .ambient-glyph.g6 { left:82%; font-size:24px; animation-duration:26s; animation-delay:-9s; }
+  .ambient-glyph.g7 { left:14%; font-size:15px; animation-duration:38s; animation-delay:-22s; }
+  .ambient-glyph.g8 { left:46%; font-size:17px; animation-duration:29s; animation-delay:-15s; }
+  .ambient-glyph.g9 { left:74%; font-size:13px; animation-duration:40s; animation-delay:-25s; }
+  @keyframes glyphRise {
+    0% { transform:translateY(105vh) rotate(-6deg); opacity:0; }
+    8% { opacity:0.35; }
+    92% { opacity:0.12; }
+    100% { transform:translateY(-15vh) rotate(8deg); opacity:0; }
+  }
+  [data-theme="light"] .ambient-bg { background:var(--bg-primary); }
+  [data-theme="light"] .ambient-orb { opacity:0.35; filter:blur(80px); }
+  [data-theme="light"] .ambient-glyph { color:rgba(147,51,234,0.12); }
+  [data-theme="light"] .ambient-grid {
+    background-image:
+      linear-gradient(rgba(147,51,234,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(147,51,234,0.05) 1px, transparent 1px);
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .ambient-mesh,.ambient-grid,.ambient-orb,.ambient-scan,.ambient-glyph {
+      animation:none !important;
+    }
+    .ambient-scan { display:none; }
   }
 
   /* SCROLLBAR */
@@ -1997,10 +2108,8 @@
     position:fixed; inset:0; z-index:999999;
     display:flex; align-items:center; justify-content:center;
     padding:24px; overflow:auto;
-    background:
-      radial-gradient(ellipse 90% 70% at 20% -10%, rgba(168,85,247,0.22) 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 100% 100%, rgba(192,132,252,0.12) 0%, transparent 50%),
-      var(--bg-primary);
+    background:rgba(10, 6, 18, 0.55);
+    backdrop-filter:blur(6px);
   }
   .auth-screen.hidden { display:none; }
   .auth-card {
@@ -2089,6 +2198,26 @@
 </style>
 </head>
 <body class="auth-locked">
+
+<div class="ambient-bg" aria-hidden="true">
+  <div class="ambient-mesh"></div>
+  <div class="ambient-grid"></div>
+  <div class="ambient-orb o1"></div>
+  <div class="ambient-orb o2"></div>
+  <div class="ambient-orb o3"></div>
+  <div class="ambient-scan"></div>
+  <div class="ambient-glyphs">
+    <span class="ambient-glyph g1">&lt;/&gt;</span>
+    <span class="ambient-glyph g2">{ ... }</span>
+    <span class="ambient-glyph g3">&lt; i &gt;</span>
+    <span class="ambient-glyph g4">const</span>
+    <span class="ambient-glyph g5">debug()</span>
+    <span class="ambient-glyph g6">=&gt;</span>
+    <span class="ambient-glyph g7">inspect</span>
+    <span class="ambient-glyph g8">{}</span>
+    <span class="ambient-glyph g9">IDE</span>
+  </div>
+</div>
 
 <!-- AUTH — login / cadastro -->
 <div class="auth-screen" id="auth-screen" role="dialog" aria-modal="true" aria-label="Acesso ao IDespector">
@@ -3029,7 +3158,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='41-brand-purple';
+const APP_VERSION='42-ambient-bg';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
