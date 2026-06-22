@@ -6137,14 +6137,21 @@ function splitTranslationChunks(text,max){
   return parts;
 }
 
-function pickBestTranslation(data){
+function pickBestTranslation(data, source){
   const matches=Array.isArray(data?.matches)?data.matches:[];
-  const best=matches
+  const sorted=matches
     .filter(m=>m?.translation&&!/MYMEMORY WARNING|INVALID/i.test(m.translation))
-    .sort((a,b)=>(Number(b.match)||0)-(Number(a.match)||0))[0];
-  const text=(best?.translation||data?.responseData?.translatedText||'').trim();
-  if(!text||/MYMEMORY WARNING|INVALID/i.test(text)) throw new Error('quota');
-  return text;
+    .sort((a,b)=>(Number(b.match)||0)-(Number(a.match)||0));
+  const srcWords=(source||'').trim().split(/\s+/).filter(Boolean).length;
+  for(const m of sorted){
+    const text=m.translation.trim();
+    const outWords=text.split(/\s+/).filter(Boolean).length;
+    if(srcWords<=2&&outWords>srcWords+1) continue;
+    return text;
+  }
+  const fallback=(data?.responseData?.translatedText||'').trim();
+  if(!fallback||/MYMEMORY WARNING|INVALID/i.test(fallback)) throw new Error('quota');
+  return fallback;
 }
 
 async function fetchTranslationChunk(q,langpair){
@@ -6163,7 +6170,7 @@ async function fetchTranslationChunk(q,langpair){
   if(!res.ok) throw new Error('network');
   const data=await res.json();
   if(Number(data.responseStatus)!==200) throw new Error(data.responseDetails||'api');
-  return pickBestTranslation(data);
+  return pickBestTranslation(data,q);
 }
 
 async function translateText(text,langpair){

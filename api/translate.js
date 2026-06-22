@@ -1,15 +1,22 @@
 const { json, handleOptions } = require('./_lib/http');
 
-function pickBestTranslation(data) {
+function pickBestTranslation(data, source) {
   const matches = Array.isArray(data?.matches) ? data.matches : [];
-  const best = matches
+  const sorted = matches
     .filter((m) => m?.translation && !/MYMEMORY WARNING|INVALID/i.test(m.translation))
-    .sort((a, b) => (Number(b.match) || 0) - (Number(a.match) || 0))[0];
-  const text = (best?.translation || data?.responseData?.translatedText || '').trim();
-  if (!text || /MYMEMORY WARNING|INVALID/i.test(text)) {
+    .sort((a, b) => (Number(b.match) || 0) - (Number(a.match) || 0));
+  const srcWords = String(source || '').trim().split(/\s+/).filter(Boolean).length;
+  for (const m of sorted) {
+    const text = m.translation.trim();
+    const outWords = text.split(/\s+/).filter(Boolean).length;
+    if (srcWords <= 2 && outWords > srcWords + 1) continue;
+    return text;
+  }
+  const fallback = (data?.responseData?.translatedText || '').trim();
+  if (!fallback || /MYMEMORY WARNING|INVALID/i.test(fallback)) {
     throw new Error(data?.responseDetails || 'Tradução indisponível');
   }
-  return text;
+  return fallback;
 }
 
 module.exports = async (req, res) => {
@@ -38,7 +45,7 @@ module.exports = async (req, res) => {
     if (Number(data.responseStatus) !== 200) {
       throw new Error(data.responseDetails || 'API de tradução retornou erro');
     }
-    const text = pickBestTranslation(data);
+    const text = pickBestTranslation(data, q);
     return json(res, 200, { ok: true, text, langpair });
   } catch (err) {
     return json(res, 502, { ok: false, error: err.message || 'Falha ao traduzir' });
