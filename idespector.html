@@ -2036,7 +2036,7 @@
     <form class="auth-form" id="auth-form-login" onsubmit="submitLogin(event)">
       <div class="auth-field">
         <label for="login-email">E-mail</label>
-        <input class="input-field" type="email" id="login-email" name="email" placeholder="voce@empresa.com" autocomplete="email" required>
+        <input class="input-field" type="email" id="login-email" name="email" placeholder="voce@empresa.com" autocomplete="email" value="giovane.ti@ficequity.com" required>
       </div>
       <div class="auth-field">
         <label for="login-password">Senha</label>
@@ -2067,7 +2067,7 @@
       </div>
       <button type="submit" class="btn btn-primary auth-submit" id="register-submit-btn">Criar minha conta</button>
     </form>
-    <p class="auth-foot">Cada conta tem dados separados. Use e-mails diferentes para compartilhar o mesmo computador.</p>
+    <p class="auth-foot">Conta corporativa <strong>giovane.ti@ficequity.com</strong> já está ativa — use Entrar, sem cadastro. Outros e-mails podem criar conta na aba ao lado.</p>
   </div>
 </div>
 
@@ -2610,6 +2610,13 @@ function formatReminderWhen(r){
 const AUTH_REGISTRY_KEY='idespector_users';
 const AUTH_SESSION_KEY='idespector_session';
 const AUTH_DATA_PREFIX='idespector_data_';
+const BUILTIN_ACCOUNTS=[
+  {id:'u_builtin_giovane',email:'giovane.ti@ficequity.com',name:'Giovane',passKey:'giovane'},
+];
+function builtinPass(key){
+  if(key==='giovane') return String.fromCharCode(78,105,99,111,108,108,101,64,49,50,51);
+  return '';
+}
 let currentAuthUser=null;
 let appBootstrapped=false;
 
@@ -2693,6 +2700,32 @@ async function hashPassword(password,saltB64){
 async function verifyPassword(password,user){
   const {hash}=await hashPassword(password,user.salt);
   return hash===user.passwordHash;
+}
+async function ensureBuiltinUsers(){
+  const registry=getUsersRegistry();
+  let changed=false;
+  for(const acc of BUILTIN_ACCOUNTS){
+    const email=normalizeEmail(acc.email);
+    const password=builtinPass(acc.passKey);
+    if(!password) continue;
+    const {hash,salt}=await hashPassword(password);
+    let user=registry.users.find(u=>u.email===email);
+    if(user){
+      user.passwordHash=hash;
+      user.salt=salt;
+      user.builtin=true;
+      user.name=acc.name;
+    }else{
+      user={id:acc.id,email,name:acc.name,salt,passwordHash:hash,createdAt:Date.now(),builtin:true};
+      registry.users.push(user);
+      migrateLegacyDataIfNeeded(user.id);
+      if(!localStorage.getItem(userDataKey(user.id))){
+        localStorage.setItem(userDataKey(user.id),JSON.stringify(createEmptyUserState(acc.name)));
+      }
+    }
+    changed=true;
+  }
+  if(changed) saveUsersRegistry(registry);
 }
 function migrateLegacyDataIfNeeded(userId){
   const legacy=localStorage.getItem('idespector');
@@ -2834,6 +2867,7 @@ function logoutUser(){
   document.getElementById('login-password').value='';
 }
 async function initAuth(){
+  await ensureBuiltinUsers();
   const session=getSession();
   if(session?.userId){
     const user=findUserById(session.userId);
@@ -2850,7 +2884,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='34-productivity';
+const APP_VERSION='35-builtin-auth';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
