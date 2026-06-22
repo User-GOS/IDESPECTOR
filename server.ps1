@@ -10,6 +10,7 @@ $listener.Start()
 Write-Host "IDespector rodando em http://localhost:$Port/idespector.html"
 Write-Host "WhatsApp API: POST http://localhost:$Port/api/whatsapp"
 Write-Host "Telegram API: POST http://localhost:$Port/api/telegram/send"
+Write-Host "Tradutor API: GET http://localhost:$Port/api/translate?q=ola&langpair=pt|en"
 Write-Host "Outlook ICS: POST http://localhost:$Port/api/outlook/ics"
 Write-Host "Pressione Ctrl+C para parar."
 
@@ -112,6 +113,41 @@ while ($listener.IsListening) {
 
         if ($path -eq "/api/health" -and $request.HttpMethod -eq "GET") {
             Send-Json $response 200 @{ ok = $true; port = $Port }
+            continue
+        }
+
+        if ($path -eq "/api/translate" -and $request.HttpMethod -eq "GET") {
+            $q = [string]$request.QueryString["q"]
+            if ([string]::IsNullOrWhiteSpace($q)) { $q = [string]$request.QueryString["text"] }
+            $langpair = [string]$request.QueryString["langpair"]
+            if ([string]::IsNullOrWhiteSpace($q)) {
+                Send-Json $response 400 @{ ok = $false; error = "Parametro q obrigatorio" }
+                continue
+            }
+            if ([string]::IsNullOrWhiteSpace($langpair) -or $langpair -notmatch '^[a-z]{2}\|[a-z]{2}$') {
+                Send-Json $response 400 @{ ok = $false; error = "langpair invalido (ex: pt|en)" }
+                continue
+            }
+            try {
+                $apiUrl = "https://api.mymemory.translated.net/get?q=" + [uri]::EscapeDataString($q) + "&langpair=" + [uri]::EscapeDataString($langpair)
+                $api = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 25
+                if ([int]$api.responseStatus -ne 200) {
+                    Send-Json $response 502 @{ ok = $false; error = $api.responseDetails }
+                    continue
+                }
+                $text = [string]$api.responseData.translatedText
+                if ($api.matches -and $api.matches.Count -gt 0) {
+                    $best = $api.matches | Where-Object { $_.translation -and $_.translation -notmatch 'MYMEMORY WARNING|INVALID' } | Sort-Object { [double]$_.match } -Descending | Select-Object -First 1
+                    if ($best) { $text = [string]$best.translation }
+                }
+                if ([string]::IsNullOrWhiteSpace($text) -or $text -match 'MYMEMORY WARNING|INVALID') {
+                    Send-Json $response 502 @{ ok = $false; error = "Traducao indisponivel" }
+                    continue
+                }
+                Send-Json $response 200 @{ ok = $true; text = $text.Trim(); langpair = $langpair }
+            } catch {
+                Send-Json $response 502 @{ ok = $false; error = "Erro ao traduzir: $($_.Exception.Message)" }
+            }
             continue
         }
 

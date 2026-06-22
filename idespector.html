@@ -2466,7 +2466,7 @@
             <label id="translator-source-label" for="translator-input">Português</label>
             <textarea id="translator-input" class="translator-editor" placeholder="Digite o texto para traduzir..."></textarea>
             <div class="translator-pane-actions">
-              <button type="button" class="btn btn-ghost btn-sm" onclick="clearTranslatorInput()">Limpar</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="translator-clear-btn">Limpar</button>
               <button type="button" class="btn btn-primary btn-sm" id="translator-run-btn">Traduzir</button>
             </div>
           </div>
@@ -2474,18 +2474,18 @@
             <label id="translator-target-label" for="translator-output">English</label>
             <textarea id="translator-output" class="translator-editor translator-output" readonly placeholder="A tradução aparece aqui..."></textarea>
             <div class="translator-pane-actions">
-              <button type="button" class="btn btn-secondary btn-sm" onclick="copyTranslation()">📋 Copiar</button>
-              <button type="button" class="btn btn-soft btn-sm" onclick="useTranslationAsInput()">↩ Traduzir de volta</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="translator-copy-btn">📋 Copiar</button>
+              <button type="button" class="btn btn-soft btn-sm" id="translator-back-btn">↩ Traduzir de volta</button>
             </div>
           </div>
         </div>
         <p class="translator-status" id="translator-status">Dica: Ctrl+Enter para traduzir rapidamente.</p>
         <div class="translator-phrases">
-          <span class="quick-btn" onclick="insertTranslatorPhrase('Good morning, how are you?')">Good morning</span>
-          <span class="quick-btn" onclick="insertTranslatorPhrase('Thank you very much')">Thank you</span>
-          <span class="quick-btn" onclick="insertTranslatorPhrase('Could you please send me the report?')">Send report</span>
-          <span class="quick-btn" onclick="insertTranslatorPhrase('Bom dia, tudo bem?')">Bom dia</span>
-          <span class="quick-btn" onclick="insertTranslatorPhrase('Preciso de ajuda com este documento')">Preciso de ajuda</span>
+          <span class="quick-btn" data-phrase="Good morning, how are you?">Good morning</span>
+          <span class="quick-btn" data-phrase="Thank you very much">Thank you</span>
+          <span class="quick-btn" data-phrase="Could you please send me the report?">Send report</span>
+          <span class="quick-btn" data-phrase="Bom dia, tudo bem?">Bom dia</span>
+          <span class="quick-btn" data-phrase="Preciso de ajuda com este documento">Preciso de ajuda</span>
         </div>
         <div class="translator-history" id="translator-history-wrap">
           <div class="translator-history-title">Histórico recente</div>
@@ -2991,7 +2991,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='36-translator-fix';
+const APP_VERSION='37-translator-api';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
@@ -5983,27 +5983,56 @@ function setTranslatorDir(dir){
 }
 
 function initTranslator(){
-  const card=document.getElementById('translator-card');
-  if(!card||card.dataset.bound) return;
-  card.dataset.bound='1';
-  card.querySelectorAll('.lang-pill[data-dir]').forEach(pill=>{
-    pill.addEventListener('click',e=>{
+  if(window._translatorEventsBound) return;
+  window._translatorEventsBound=true;
+
+  document.addEventListener('click',e=>{
+    const card=e.target.closest('#translator-card');
+    if(!card) return;
+    const pill=e.target.closest('.lang-pill[data-dir]');
+    if(pill){
       e.preventDefault();
-      e.stopPropagation();
       setTranslatorDir(pill.dataset.dir);
-    });
+      return;
+    }
+    if(e.target.closest('#translator-swap-btn')){
+      e.preventDefault();
+      swapTranslatorDir();
+      return;
+    }
+    if(e.target.closest('#translator-run-btn')){
+      e.preventDefault();
+      runTranslation();
+      return;
+    }
+    if(e.target.closest('#translator-clear-btn')){
+      e.preventDefault();
+      clearTranslatorInput();
+      return;
+    }
+    if(e.target.closest('#translator-copy-btn')){
+      e.preventDefault();
+      copyTranslation();
+      return;
+    }
+    if(e.target.closest('#translator-back-btn')){
+      e.preventDefault();
+      useTranslationAsInput();
+      return;
+    }
+    const phrase=e.target.closest('.translator-phrases .quick-btn');
+    if(phrase){
+      e.preventDefault();
+      insertTranslatorPhrase(phrase.dataset.phrase||phrase.textContent.trim());
+    }
   });
-  document.getElementById('translator-swap-btn')?.addEventListener('click',e=>{
-    e.preventDefault();
-    e.stopPropagation();
-    swapTranslatorDir();
-  });
-  document.getElementById('translator-run-btn')?.addEventListener('click',e=>{
-    e.preventDefault();
-    runTranslation();
-  });
-  document.getElementById('translator-input')?.addEventListener('keydown',e=>{
-    if(e.ctrlKey&&e.key==='Enter'){ e.preventDefault(); runTranslation(); }
+
+  document.addEventListener('keydown',e=>{
+    if(!e.target||e.target.id!=='translator-input') return;
+    if(e.ctrlKey&&e.key==='Enter'){
+      e.preventDefault();
+      runTranslation();
+    }
   });
 }
 
@@ -6108,15 +6137,33 @@ function splitTranslationChunks(text,max){
   return parts;
 }
 
+function pickBestTranslation(data){
+  const matches=Array.isArray(data?.matches)?data.matches:[];
+  const best=matches
+    .filter(m=>m?.translation&&!/MYMEMORY WARNING|INVALID/i.test(m.translation))
+    .sort((a,b)=>(Number(b.match)||0)-(Number(a.match)||0))[0];
+  const text=(best?.translation||data?.responseData?.translatedText||'').trim();
+  if(!text||/MYMEMORY WARNING|INVALID/i.test(text)) throw new Error('quota');
+  return text;
+}
+
 async function fetchTranslationChunk(q,langpair){
-  const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(q)}&langpair=${langpair}`;
-  const res=await fetch(url);
+  const proxyUrl=`/api/translate?q=${encodeURIComponent(q)}&langpair=${encodeURIComponent(langpair)}`;
+  try{
+    const res=await fetch(proxyUrl,{cache:'no-store'});
+    const data=await res.json();
+    if(res.ok&&data.ok&&data.text) return data.text;
+    if(data?.error) throw new Error(data.error);
+  }catch(proxyErr){
+    if(location.protocol==='file:') throw new Error('file');
+  }
+
+  const directUrl=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(q)}&langpair=${langpair}`;
+  const res=await fetch(directUrl,{cache:'no-store'});
   if(!res.ok) throw new Error('network');
   const data=await res.json();
-  if(data.responseStatus!==200||!data.responseData?.translatedText) throw new Error('api');
-  const t=data.responseData.translatedText;
-  if(/INVALID|MYMEMORY WARNING/i.test(t)) throw new Error('quota');
-  return t;
+  if(Number(data.responseStatus)!==200) throw new Error(data.responseDetails||'api');
+  return pickBestTranslation(data);
 }
 
 async function translateText(text,langpair){
@@ -6152,8 +6199,11 @@ async function runTranslation(){
     pushTranslatorHistory(text,result,dir);
     if(status) status.textContent=`Tradução concluída (${text.length} caractere${text.length!==1?'s':''}).`;
   }catch(e){
-    if(status) status.textContent='Erro na tradução. Verifique a conexão e tente novamente.';
-    showToast('⚠️','Erro','Não foi possível traduzir agora.');
+    const msg=e?.message==='file'
+      ?'Abra pelo servidor local (iniciar.bat) ou pelo site na Vercel para traduzir.'
+      :'Erro na tradução. Verifique a conexão e tente novamente.';
+    if(status) status.textContent=msg;
+    showToast('⚠️','Erro',msg);
   }finally{
     translatorBusy=false;
     if(btn) btn.disabled=false;
@@ -6381,6 +6431,7 @@ function bootstrapApp(){
   setTimeout(()=>showToast('📋','Resumo do dia',`${state.tasks.filter(t=>!t.done).length} tarefas pendentes, ${eventsOnDate(todayStr()).length} eventos hoje.`),2000);
 }
 
+initTranslator();
 initAuth();
 </script>
 </body>
