@@ -1,0 +1,28 @@
+---
+description: Commit e push automáticos após alterações no IDespector
+alwaysApply: true
+---
+
+# Commit e push automáticos
+
+O usuário autorizou commit e push **sem pedir confirmação** sempre que houver alterações neste projeto.
+
+## Quando aplicar
+
+Após concluir qualquer alteração de código, configuração ou assets no repositório IDespector:
+
+1. Verificar `git status` e o diff das mudanças.
+2. Criar commit com mensagem clara (o quê e por quê).
+3. Fazer `git push` para `origin` na branch atual (geralmente `main`).
+4. Informar o hash do commit e confirmar que o push foi enviado (deploy Vercel segue automaticamente).
+
+## Exceções
+
+- Não commitar arquivos com segredos (`.env`, chaves, tokens).
+- Não usar `git config` global; se faltar identidade, usar `-c user.name` e `-c user.email` transitório ou o autor do último commit.
+- Não fazer force push em `main` nem comandos destrutivos.
+
+## Repositório
+
+- GitHub: https://github.com/User-GOS/IDESPECTOR
+- Deploy: Vercel (integrado ao `main`)
