@@ -2479,7 +2479,7 @@
             </div>
           </div>
         </div>
-        <p class="translator-status" id="translator-status">Dica: Ctrl+Enter para traduzir rapidamente.</p>
+        <p class="translator-status" id="translator-status">Dica: Enter para traduzir · Shift+Enter para nova linha.</p>
         <div class="translator-phrases">
           <span class="quick-btn" data-phrase="Good morning, how are you?">Good morning</span>
           <span class="quick-btn" data-phrase="Thank you very much">Thank you</span>
@@ -2997,7 +2997,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='38-translator-google';
+const APP_VERSION='39-translator-enter';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
@@ -5442,7 +5442,7 @@ function getContextLine(view){
       :'<strong>Agenda</strong> — livre hoje. Diga "agendar reunião às 14h".',
     notes:`<strong>Notas</strong> — ${(state.notes?.content||'').length} caractere(s) no bloco.`,
     productivity:`<strong>Produtividade</strong> — ${state.pomodoro?.sessionsToday||0} pomodoro(s) hoje.`,
-    translator:`<strong>Tradutor</strong> — PT ↔ EN. Digite o texto e clique em Traduzir (Ctrl+Enter).`,
+    translator:`<strong>Tradutor</strong> — PT ↔ EN. Digite o texto e pressione Enter para traduzir.`,
   };
   return map[v]||map.dashboard;
 }
@@ -5983,8 +5983,8 @@ function setTranslatorDir(dir){
   const status=document.getElementById('translator-status');
   if(status){
     status.textContent=dir==='pt-en'
-      ?'Modo: Português → Inglês. Ctrl+Enter para traduzir.'
-      :'Modo: Inglês → Português. Ctrl+Enter para traduzir.';
+      ?'Modo: Português → Inglês. Enter para traduzir.'
+      :'Modo: Inglês → Português. Enter para traduzir.';
   }
 }
 
@@ -6035,7 +6035,7 @@ function initTranslator(){
 
   document.addEventListener('keydown',e=>{
     if(!e.target||e.target.id!=='translator-input') return;
-    if(e.ctrlKey&&e.key==='Enter'){
+    if(e.key==='Enter'&&!e.shiftKey){
       e.preventDefault();
       runTranslation();
     }
@@ -6075,7 +6075,7 @@ function clearTranslatorInput(){
   const status=document.getElementById('translator-status');
   if(input) input.value='';
   if(output) output.value='';
-  if(status) status.textContent='Dica: Ctrl+Enter para traduzir rapidamente.';
+  if(status) status.textContent='Dica: Enter para traduzir · Shift+Enter para nova linha.';
   input?.focus();
 }
 
