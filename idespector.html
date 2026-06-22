@@ -643,6 +643,21 @@
     background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.25);
     color:var(--danger); font-size:11px; line-height:1.5;
   }
+  .wa-notify-block {
+    margin-top:16px; padding:14px; border-radius:12px;
+    border:1px solid var(--border); background:var(--bg-glass);
+  }
+  .wa-notify-title {
+    font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:10px;
+  }
+  .wa-notify-grid {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;
+  }
+  .wa-notify-item {
+    display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary);
+    cursor:pointer; user-select:none;
+  }
+  .wa-notify-item input { accent-color:#25D366; width:15px; height:15px; }
 
   /* CONTENT */
   .content { padding: 0 8px 32px; max-width:1560px; margin:0 auto; }
@@ -2556,7 +2571,7 @@ let state = {
   tasks: [], reminders: [], alarms: [], events: [],
   chat: [],
   focusMode: false, userName: null,
-  whatsapp: { enabled: false, phone: '', apiKey: '' },
+  whatsapp: { enabled: false, phone: '', apiKey: '', alarms: true, reminders: true, events: true, tasks: true, pomodoro: true, snooze: true },
   whatsappSent: {}, whatsappSentDate: null,
   telegram: { enabled: false, botToken: '', chatId: '' },
   linkedin: { profileUrl: '' },
@@ -2643,6 +2658,16 @@ function migrateTranslator(){
     state.translator.historyVersion='38';
     save();
   }
+}
+const DEFAULT_WHATSAPP_NOTIFY={alarms:true,reminders:true,events:true,tasks:true,pomodoro:true,snooze:true};
+function migrateWhatsApp(){
+  const base={enabled:false,phone:'',apiKey:'',...DEFAULT_WHATSAPP_NOTIFY};
+  if(!state.whatsapp){state.whatsapp={...base};save();return;}
+  let changed=false;
+  for(const k of Object.keys(DEFAULT_WHATSAPP_NOTIFY)){
+    if(state.whatsapp[k]===undefined){state.whatsapp[k]=DEFAULT_WHATSAPP_NOTIFY[k];changed=true;}
+  }
+  if(changed) save();
 }
 function migrateNotes(){
   if(!state.notes){state.notes={content:'',updated:null};save();}
@@ -2850,7 +2875,7 @@ function createEmptyUserState(name){
   return {
     tasks:[],reminders:[],alarms:[],events:[],chat:[],
     focusMode:false,userName:name||null,
-    whatsapp:{enabled:false,phone:'',apiKey:''},
+    whatsapp:{enabled:false,phone:'',apiKey:'',...DEFAULT_WHATSAPP_NOTIFY},
     whatsappSent:{},whatsappSentDate:null,
     telegram:{enabled:false,botToken:'',chatId:''},
     linkedin:{profileUrl:''},
@@ -2997,7 +3022,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='39-translator-enter';
+const APP_VERSION='40-whatsapp-notify';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
@@ -3028,6 +3053,8 @@ function load(){
     if(!state.telegramSent) state.telegramSent={};
     if(!state.alarmFired) state.alarmFired={};
     if(!state.reminderFired) state.reminderFired={};
+    if(!state.eventFired) state.eventFired={};
+    if(!state.taskFired) state.taskFired={};
     if(!state.alarmSnoozes) state.alarmSnoozes={};
     if(!state.reminderSnoozes) state.reminderSnoozes={};
     migrateEvents();
@@ -3035,6 +3062,7 @@ function load(){
     migrateNotes();
     migrateProductivity();
     migrateTranslator();
+    migrateWhatsApp();
     resetNotifFiredIfNeeded();
     const needsReset=state.appVersion!==APP_VERSION
       ||state.chat?.some(m=>m.content?.includes('Erro de conexão'));
@@ -3093,36 +3121,57 @@ function resetNotifFiredIfNeeded(){
     state.notifFiredDate=d;
     state.alarmFired={};
     state.reminderFired={};
+    state.eventFired={};
+    state.taskFired={};
   }
 }
 
 function checkAlarms(now){
   const hhmm=now.toTimeString().slice(0,5);
+  const today=todayStr();
   if(now.getSeconds()===0){
     resetWhatsAppSentIfNeeded();
     resetTelegramSentIfNeeded();
     resetNotifFiredIfNeeded();
-    state.alarms.filter(a=>a.on&&a.time===hhmm).forEach(a=>{
-      const key=`alarm-${a.id}-${hhmm}`;
-      if(state.alarmFired?.[key]) return;
-      if(state.alarmSnoozes?.[a.id]>Date.now()) return;
-      state.alarmFired=state.alarmFired||{};
-      state.alarmFired[key]=true;
-      save();
-      triggerAlarmOverlay(a);
-      notifyUser('⏰','Alarme: '+a.label,'Seu alarme das '+a.time+' está tocando!','alarm',a.id,hhmm);
-    });
-    state.reminders.filter(r=>r.date===todayStr()&&r.time===hhmm).forEach(r=>{
-      const key=`reminder-${r.id}-${hhmm}`;
-      if(state.reminderFired?.[key]) return;
-      if(state.reminderSnoozes?.[r.id]>Date.now()) return;
-      state.reminderFired=state.reminderFired||{};
-      state.reminderFired[key]=true;
-      save();
-      triggerReminderOverlay(r);
-      notifyUser('🔔','Lembrete!',r.text,'reminder',r.id,hhmm);
-    });
   }
+  state.alarms.filter(a=>a.on&&a.time===hhmm).forEach(a=>{
+    const key=`alarm-${a.id}-${hhmm}`;
+    if(state.alarmFired?.[key]) return;
+    if(state.alarmSnoozes?.[a.id]>Date.now()) return;
+    state.alarmFired=state.alarmFired||{};
+    state.alarmFired[key]=true;
+    save();
+    triggerAlarmOverlay(a);
+    notifyUser('⏰','Alarme: '+a.label,'Seu alarme das '+a.time+' está tocando!','alarm',a.id,hhmm);
+  });
+  state.reminders.filter(r=>r.date===today&&r.time===hhmm).forEach(r=>{
+    const key=`reminder-${r.id}-${hhmm}`;
+    if(state.reminderFired?.[key]) return;
+    if(state.reminderSnoozes?.[r.id]>Date.now()) return;
+    state.reminderFired=state.reminderFired||{};
+    state.reminderFired[key]=true;
+    save();
+    triggerReminderOverlay(r);
+    notifyUser('🔔','Lembrete!',r.text,'reminder',r.id,hhmm);
+  });
+  eventsOnDate(today).filter(e=>(e.time||'').slice(0,5)===hhmm).forEach(e=>{
+    const key=`event-${e.id}-${hhmm}`;
+    if(state.eventFired?.[key]) return;
+    state.eventFired=state.eventFired||{};
+    state.eventFired[key]=true;
+    save();
+    const loc=e.location?`\n📍 ${e.location}`:'';
+    notifyUser('📅','Compromisso: '+e.title,`Começa agora às ${e.time}.${loc}`,'event',e.id,hhmm);
+  });
+  state.tasks.filter(t=>!t.done&&t.dueDate===today&&t.dueTime===hhmm).forEach(t=>{
+    const key=`task-${t.id}-${hhmm}`;
+    if(state.taskFired?.[key]) return;
+    state.taskFired=state.taskFired||{};
+    state.taskFired[key]=true;
+    save();
+    const cat=t.cat?` [${t.cat}]`:'';
+    notifyUser('✅','Tarefa agora',`${t.text}${cat} — prazo às ${t.dueTime}.`,'task',t.id,hhmm);
+  });
 }
 
 let activeAlert=null;
@@ -3344,7 +3393,7 @@ function snoozeAlert(mins=5){
     if(alertSnoozeTimer) clearTimeout(alertSnoozeTimer);
     alertSnoozeTimer=setTimeout(()=>{
       triggerReminderOverlay(item);
-      notifyUser('🔔','Lembrete!',item.text,'reminder',item.id,'snooze-'+item.id);
+      notifyUser('🔔','Lembrete!',item.text,'reminder-snooze',item.id,'snooze-'+item.id);
     },mins*60000);
   }else{
     state.alarmSnoozes=state.alarmSnoozes||{};
@@ -3355,7 +3404,7 @@ function snoozeAlert(mins=5){
     if(alertSnoozeTimer) clearTimeout(alertSnoozeTimer);
     alertSnoozeTimer=setTimeout(()=>{
       triggerAlarmOverlay(item);
-      notifyUser('⏰','Alarme: '+item.label,'Soneca encerrada — alarme das '+item.time+'!','alarm',item.id,'snooze-'+item.id);
+      notifyUser('⏰','Alarme: '+item.label,'Soneca encerrada — alarme das '+item.time+'!','alarm-snooze',item.id,'snooze-'+item.id);
     },mins*60000);
   }
 }
@@ -3447,10 +3496,12 @@ function completePomodoroPhase(){
     p.phase='break';
     p.endsAt=Date.now()+p.shortBreak*60000;
     showToast('☕','Pausa!',`Bom trabalho! Descanse ${p.shortBreak} minutos.`);
+    notifyUser('🍅','Pomodoro concluído!',`Bom trabalho! Descanse ${p.shortBreak} minutos.`,'pomodoro','work',String(p.sessionsToday||1));
   }else{
     p.phase='idle';
     p.endsAt=null;
     showToast('🍅','Pausa encerrada','Pronto para mais um ciclo de foco?');
+    notifyUser('☕','Pausa encerrada','Pronto para mais um ciclo de foco?','pomodoro','break',String(Date.now()));
   }
   save();renderPomodoro();updateMetrics();
 }
@@ -4590,19 +4641,40 @@ async function sendWhatsApp(title,body){
   }
 }
 
-function notifyUser(icon,title,body,type,id,timeKey){
+function whatsappNotifyEnabled(type){
+  const wa=state.whatsapp||{};
+  if(!wa.enabled||!wa.phone||!wa.apiKey||isInvalidApiKey(wa.apiKey)) return false;
+  if(String(type).includes('snooze')) return wa.snooze!==false;
+  const map={alarm:'alarms',reminder:'reminders',event:'events',task:'tasks',pomodoro:'pomodoro'};
+  const key=map[type]||'reminders';
+  return wa[key]!==false;
+}
+
+async function notifyUser(icon,title,body,type,id,timeKey){
   showToast(icon,title,body);
   const key=`${type}-${id}-${timeKey}`;
   let sent=false;
+
   const tg=state.telegram||{};
   if(tg.enabled&&tg.botToken&&tg.chatId&&!state.telegramSent[key]){
-    state.telegramSent[key]=true; sent=true;
-    sendTelegram(title,body);
+    state.telegramSent[key]=true;
+    sent=true;
+    sendTelegram(title,body).catch(()=>{});
   }
-  const wa=state.whatsapp||{};
-  if(wa.enabled&&wa.phone&&wa.apiKey&&!state.whatsappSent[key]){
-    state.whatsappSent[key]=true; sent=true;
-    sendWhatsApp(title,body);
+
+  if(whatsappNotifyEnabled(type)&&!state.whatsappSent[key]){
+    state.whatsappSent[key]=true;
+    sent=true;
+    try{
+      const result=await sendWhatsApp(title,body);
+      if(!result?.ok&&!result?.skipped){
+        delete state.whatsappSent[key];
+        console.warn('WhatsApp notify failed:',result?.error||'unknown');
+      }
+    }catch(e){
+      delete state.whatsappSent[key];
+      console.warn('WhatsApp notify error:',e);
+    }
   }
   if(sent) save();
 }
@@ -5282,7 +5354,7 @@ async function openWhatsAppSettings(){
         <div class="wa-hero-icon">📱</div>
         <div>
           <div class="wa-hero-title">WhatsApp</div>
-          <div class="wa-hero-sub">Notificações de alarmes e lembretes</div>
+          <div class="wa-hero-sub">Alarmes, lembretes, agenda, tarefas e pomodoro</div>
         </div>
         <div class="wa-hero-badge ${connected?'show':''}" id="wa-hero-badge">● Conectado</div>
       </div>
@@ -5326,6 +5398,17 @@ async function openWhatsAppSettings(){
           <span class="wa-key-ok">✓</span>
         </div>
       </div>
+      <div class="wa-notify-block">
+        <div class="wa-notify-title">🔔 Enviar no WhatsApp</div>
+        <div class="wa-notify-grid">
+          <label class="wa-notify-item"><input type="checkbox" id="wa-notify-alarms" ${wa.alarms!==false?'checked':''}> Alarmes</label>
+          <label class="wa-notify-item"><input type="checkbox" id="wa-notify-reminders" ${wa.reminders!==false?'checked':''}> Lembretes</label>
+          <label class="wa-notify-item"><input type="checkbox" id="wa-notify-events" ${wa.events!==false?'checked':''}> Agenda</label>
+          <label class="wa-notify-item"><input type="checkbox" id="wa-notify-tasks" ${wa.tasks!==false?'checked':''}> Tarefas</label>
+          <label class="wa-notify-item"><input type="checkbox" id="wa-notify-pomodoro" ${wa.pomodoro!==false?'checked':''}> Pomodoro</label>
+          <label class="wa-notify-item"><input type="checkbox" id="wa-notify-snooze" ${wa.snooze!==false?'checked':''}> Soneca</label>
+        </div>
+      </div>
     </div>
     <div class="wa-footer">
       <div id="wa-status" class="wa-status-box"></div>
@@ -5343,6 +5426,15 @@ async function openWhatsAppSettings(){
   document.getElementById('wa-phone')?.addEventListener('input',onWaPhoneInput);
   document.getElementById('wa-apikey')?.addEventListener('input',onWaApiKeyInput);
   document.getElementById('wa-apikey')?.addEventListener('paste',()=>setTimeout(onWaApiKeyInput,50));
+  document.querySelectorAll('.wa-notify-item input').forEach(inp=>{
+    inp.addEventListener('change',()=>{
+      if(state.whatsapp?.enabled){
+        state.whatsapp={...state.whatsapp,...readWhatsAppNotifyPrefs()};
+        save();
+        showToast('📱','WhatsApp','Preferências de alerta atualizadas.');
+      }
+    });
+  });
   const srv=await checkWaServer();
   const warn=document.getElementById('wa-server-warn');
   if(!srv.ok&&warn){ warn.style.display='block'; warn.innerHTML='⚠️ '+srv.error; }
@@ -5350,6 +5442,17 @@ async function openWhatsAppSettings(){
   if(connected){ setWaStep(3); setWaStatus('ok','✅ Conectado! Toque em <strong>Reenviar teste</strong> para confirmar.'); }
   else if(wa.apiKey&&!isInvalidApiKey(wa.apiKey)){ setWaStep(3); onWaApiKeyInput(); }
   else{ setWaStep(1); onWaPhoneInput(); }
+}
+
+function readWhatsAppNotifyPrefs(){
+  return {
+    alarms:document.getElementById('wa-notify-alarms')?.checked!==false,
+    reminders:document.getElementById('wa-notify-reminders')?.checked!==false,
+    events:document.getElementById('wa-notify-events')?.checked!==false,
+    tasks:document.getElementById('wa-notify-tasks')?.checked!==false,
+    pomodoro:document.getElementById('wa-notify-pomodoro')?.checked!==false,
+    snooze:document.getElementById('wa-notify-snooze')?.checked!==false,
+  };
 }
 
 async function connectWhatsApp(){
@@ -5361,7 +5464,7 @@ async function connectWhatsApp(){
   if(!srv.ok){ setWaStatus('err','⚠️ '+srv.error); return; }
   setWaStep(3);
   setWaStatus('wait','Enviando teste para <strong>'+phone+'</strong>...');
-  state.whatsapp={enabled:true,phone,apiKey};
+  state.whatsapp={...state.whatsapp,enabled:true,phone,apiKey,...readWhatsAppNotifyPrefs()};
   save(); updateWhatsAppStatus();
   try{
     const res=await fetch('/api/whatsapp',{
@@ -5374,7 +5477,7 @@ async function connectWhatsApp(){
       document.getElementById('wa-hero-badge')?.classList.add('show');
       const btn=document.getElementById('wa-connect-btn');
       if(btn) btn.textContent='↻ Reenviar teste';
-      setWaStatus('ok','✅ <strong>Conectado!</strong> Verifique seu WhatsApp. Notificações ativas!');
+      setWaStatus('ok','✅ <strong>Conectado!</strong> Verifique seu WhatsApp. Alertas ativos para alarmes, lembretes e mais!');
       showToast('✅','WhatsApp conectado','Mensagem de teste enviada!');
       setTimeout(()=>closeModal(),2500);
     }else{
@@ -6447,6 +6550,10 @@ function bootstrapApp(){
   initTranslator();
   handleOutlookAuthCallback();
   ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible') updateClock();
+  });
+  window.addEventListener('focus',()=>updateClock());
   updateClock();
   setInterval(updateClock,1000);
   renderAll();
