@@ -1995,6 +1995,107 @@
   .habit-name { font-size:14px; font-weight:600; }
   .habit-streak { font-size:11px; color:var(--text-muted); margin-top:2px; }
   .habit-streak strong { color:var(--warning); }
+  .habit-gamification {
+    padding:14px; margin-bottom:12px; border-radius:14px;
+    background:linear-gradient(135deg, rgba(168,85,247,0.14), rgba(192,132,252,0.06));
+    border:1px solid rgba(168,85,247,0.22);
+  }
+  .habit-gam-head {
+    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;
+  }
+  .habit-gam-level {
+    display:flex; align-items:center; gap:8px; min-width:0;
+  }
+  .habit-level-badge {
+    width:36px; height:36px; border-radius:10px; flex-shrink:0;
+    background:linear-gradient(145deg, var(--accent), #7c3aed);
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:800; color:#fff;
+    box-shadow:0 4px 14px var(--accent-glow);
+  }
+  .habit-rank-title { font-size:13px; font-weight:700; color:var(--text-primary); line-height:1.2; }
+  .habit-rank-sub { font-size:10px; color:var(--text-muted); font-weight:600; }
+  .habit-xp-total { font-size:11px; font-weight:700; color:var(--accent-2); white-space:nowrap; }
+  .habit-xp-bar {
+    height:8px; border-radius:999px; background:rgba(0,0,0,0.25);
+    border:1px solid var(--border); overflow:hidden; margin-bottom:8px;
+  }
+  .habit-xp-fill {
+    height:100%; border-radius:999px;
+    background:linear-gradient(90deg, var(--accent), var(--accent-2));
+    box-shadow:0 0 12px var(--accent-glow);
+    transition:width .5s var(--ease-out);
+  }
+  .habit-xp-label { font-size:10px; color:var(--text-muted); margin-bottom:8px; font-weight:600; }
+  .habit-badges-row { display:flex; flex-wrap:wrap; gap:6px; }
+  .habit-badge-chip {
+    font-size:10px; font-weight:600; padding:4px 8px; border-radius:999px;
+    background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.2);
+    color:var(--text-secondary); cursor:default;
+  }
+  .habit-badge-chip.locked { opacity:0.35; filter:grayscale(0.6); }
+  .habit-daily-bonus {
+    text-align:center; font-size:11px; font-weight:600; margin-top:10px;
+    padding:8px 10px; border-radius:10px;
+    background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2);
+    color:var(--success);
+  }
+  .habit-daily-bonus.pending {
+    background:rgba(168,85,247,0.08); border-color:rgba(168,85,247,0.18);
+    color:var(--accent-2);
+  }
+  .habit-item.just-completed { animation:habitPop .45s var(--ease-out); }
+  @keyframes habitPop {
+    0% { transform:scale(1); }
+    40% { transform:scale(1.02); border-color:rgba(168,85,247,0.5); }
+    100% { transform:scale(1); }
+  }
+  #xp-popup-container {
+    position:fixed; inset:0; pointer-events:none; z-index:250000;
+  }
+  .xp-float {
+    position:fixed; left:50%; top:42%;
+    transform:translate(-50%,0);
+    padding:10px 18px; border-radius:999px;
+    background:linear-gradient(135deg, rgba(168,85,247,0.95), rgba(124,58,237,0.95));
+    border:1px solid rgba(255,255,255,0.2);
+    color:#fff; font-size:15px; font-weight:800;
+    box-shadow:0 12px 40px rgba(168,85,247,0.45);
+    animation:xpFloatUp 1.4s var(--ease-out) forwards;
+    white-space:nowrap;
+  }
+  @keyframes xpFloatUp {
+    0% { opacity:0; transform:translate(-50%,20px) scale(0.85); }
+    15% { opacity:1; transform:translate(-50%,0) scale(1.05); }
+    70% { opacity:1; transform:translate(-50%,-36px) scale(1); }
+    100% { opacity:0; transform:translate(-50%,-64px) scale(0.95); }
+  }
+  .perfect-day-overlay {
+    position:fixed; inset:0; z-index:240000;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(10,6,18,0.72); backdrop-filter:blur(8px);
+    opacity:0; pointer-events:none; transition:opacity .35s;
+  }
+  .perfect-day-overlay.show { opacity:1; pointer-events:auto; }
+  .perfect-day-card {
+    text-align:center; padding:36px 32px; max-width:360px; width:90%;
+    border-radius:24px;
+    background:linear-gradient(160deg, rgba(168,85,247,0.2), rgba(20,12,32,0.98));
+    border:1px solid rgba(168,85,247,0.35);
+    box-shadow:0 24px 80px rgba(168,85,247,0.35);
+    animation:perfectPop .5s var(--ease-out);
+  }
+  @keyframes perfectPop {
+    from { opacity:0; transform:scale(0.88) translateY(20px); }
+    to { opacity:1; transform:scale(1) translateY(0); }
+  }
+  .perfect-day-icon { font-size:56px; line-height:1; margin-bottom:12px; }
+  .perfect-day-title { font-size:22px; font-weight:800; margin-bottom:8px; color:var(--text-primary); }
+  .perfect-day-sub { font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:20px; }
+  .perfect-day-xp {
+    font-size:28px; font-weight:800; color:var(--accent-2);
+    text-shadow:0 0 24px var(--accent-glow); margin-bottom:20px;
+  }
   .goal-item {
     padding:14px; border-radius:12px; background:var(--bg-glass);
     border:1px solid var(--border); margin-bottom:10px;
@@ -2482,9 +2583,13 @@
       <div class="metric-icon blue">🍅</div>
       <div><div class="metric-num blue" id="m-pomodoro">0</div><div class="metric-label">Pomodoros</div></div>
     </div>
-    <div class="metric-card clickable" onclick="navTo('productivity')" title="Ver hábitos">
+    <div class="metric-card clickable" onclick="navTo('productivity')" title="Ver hábitos e XP">
       <div class="metric-icon green">🔁</div>
       <div><div class="metric-num green" id="m-habits">0</div><div class="metric-label">Hábitos hoje</div></div>
+    </div>
+    <div class="metric-card clickable" onclick="navTo('productivity')" title="Seu nível de hábitos">
+      <div class="metric-icon blue">⭐</div>
+      <div><div class="metric-num blue" id="m-level">1</div><div class="metric-label" id="m-level-label">Nível</div></div>
     </div>
   </div>
 
@@ -2689,6 +2794,16 @@
 </div>
 
 <!-- FOCUS MODE -->
+<div id="xp-popup-container" aria-live="polite"></div>
+<div class="perfect-day-overlay" id="perfect-day-overlay" role="dialog" aria-label="Dia perfeito">
+  <div class="perfect-day-card">
+    <div class="perfect-day-icon">🏆</div>
+    <div class="perfect-day-title">Dia Perfeito!</div>
+    <div class="perfect-day-sub" id="perfect-day-sub">Você completou todos os hábitos de hoje. Incrível disciplina!</div>
+    <div class="perfect-day-xp" id="perfect-day-xp">+50 XP</div>
+    <button type="button" class="btn btn-primary" onclick="closePerfectDayOverlay()">Continuar</button>
+  </div>
+</div>
 <div class="focus-overlay" id="focus-overlay">
   <div class="focus-title">◈ MODO FOCO ATIVADO</div>
   <div class="focus-clock" id="focus-clock-display">00:00:00</div>
@@ -2782,6 +2897,21 @@ function migrateProductivity(){
     changed=true;
   }
   if(changed) save();
+}
+function migrateGamification(){
+  if(!state.gamification){
+    state.gamification={
+      xp:0,level:1,totalHabitsCompleted:0,
+      perfectDays:0,perfectDaysLog:{},badges:[],
+    };
+    save();
+    return;
+  }
+  const g=state.gamification;
+  if(!g.badges) g.badges=[];
+  if(!g.perfectDaysLog) g.perfectDaysLog={};
+  if(g.perfectDays===undefined) g.perfectDays=Object.keys(g.perfectDaysLog).length;
+  g.level=calcGamificationLevel(g.xp||0);
 }
 function migrateTranslator(){
   if(!state.translator){
@@ -3024,6 +3154,7 @@ function createEmptyUserState(name){
     currentView:'dashboard',taskFilter:null,
     notes:{content:'',updated:null},
     habits:[],goals:[],
+    gamification:{xp:0,level:1,totalHabitsCompleted:0,perfectDays:0,perfectDaysLog:{},badges:[]},
     pomodoro:{workMin:25,shortBreak:5,longBreak:15,phase:'idle',endsAt:null,sessionsToday:0,date:null,totalMin:0},
     productivityTab:'pomodoro',
     translator:{dir:'pt-en',history:[],historyVersion:'38'},
@@ -3158,7 +3289,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='42-ambient-bg';
+const APP_VERSION='43-habit-gamification';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
@@ -3198,6 +3329,7 @@ function load(){
     migrateNotes();
     migrateProductivity();
     migrateTranslator();
+    migrateGamification();
     migrateWhatsApp();
     resetNotifFiredIfNeeded();
     const needsReset=state.appVersion!==APP_VERSION
@@ -3691,14 +3823,235 @@ function calcHabitStreak(h){
   }
   return streak;
 }
+
+const GAMIFICATION_RANKS=[
+  'Iniciante','Aprendiz','Constante','Focado','Disciplinado',
+  'Veterano','Mestre','Lenda','Inspetor','IDespector Elite',
+];
+const GAMIFICATION_BADGES=[
+  {id:'first_habit',icon:'🌱',name:'Primeiro passo',desc:'Complete seu primeiro hábito'},
+  {id:'streak_3',icon:'🔥',name:'3 dias seguidos',desc:'Streak de 3 dias em um hábito'},
+  {id:'streak_7',icon:'⚡',name:'Semana forte',desc:'Streak de 7 dias'},
+  {id:'streak_30',icon:'👑',name:'Mês de ouro',desc:'Streak de 30 dias'},
+  {id:'perfect_day',icon:'✨',name:'Dia perfeito',desc:'Todos os hábitos em um dia'},
+  {id:'perfect_week',icon:'🏆',name:'Semana perfeita',desc:'7 dias perfeitos acumulados'},
+  {id:'level_5',icon:'🎖️',name:'Nível 5',desc:'Alcance o nível 5'},
+  {id:'level_10',icon:'💎',name:'Nível 10',desc:'Alcance o nível 10'},
+  {id:'habits_50',icon:'📈',name:'50 hábitos',desc:'50 hábitos completados no total'},
+  {id:'habits_100',icon:'🚀',name:'Centurião',desc:'100 hábitos completados'},
+];
+const GAMIFICATION_XP={
+  habitBase:15,
+  streakPerDay:2,
+  streakCap:14,
+  perfectDay:50,
+  firstOfDay:5,
+};
+
+function getGamification(){
+  migrateGamification();
+  return state.gamification;
+}
+
+function xpThresholdForLevel(level){
+  if(level<=1) return 0;
+  return Math.floor(35*Math.pow(level-1,1.4));
+}
+
+function calcGamificationLevel(xp){
+  let level=1;
+  while(xpThresholdForLevel(level+1)<=xp) level++;
+  return level;
+}
+
+function xpProgressInLevel(xp,level){
+  const cur=xpThresholdForLevel(level);
+  const next=xpThresholdForLevel(level+1);
+  const span=Math.max(1,next-cur);
+  return Math.min(100,Math.round(((xp-cur)/span)*100));
+}
+
+function gamificationRank(level){
+  return GAMIFICATION_RANKS[Math.min(level-1,GAMIFICATION_RANKS.length-1)]||'IDespector Elite';
+}
+
+function hasBadge(id){
+  return (getGamification().badges||[]).includes(id);
+}
+
+function unlockBadge(id){
+  const g=getGamification();
+  if(!g.badges) g.badges=[];
+  if(g.badges.includes(id)) return null;
+  g.badges.push(id);
+  const badge=GAMIFICATION_BADGES.find(b=>b.id===id);
+  return badge||null;
+}
+
+function checkGamificationBadges(habit){
+  const unlocked=[];
+  const g=getGamification();
+  const streak=calcHabitStreak(habit);
+  const total=g.totalHabitsCompleted||0;
+  const level=g.level||1;
+  const perfect=g.perfectDays||0;
+  const checks=[
+    ['first_habit',total>=1],
+    ['streak_3',streak>=3],
+    ['streak_7',streak>=7],
+    ['streak_30',streak>=30],
+    ['perfect_day',perfect>=1],
+    ['perfect_week',perfect>=7],
+    ['level_5',level>=5],
+    ['level_10',level>=10],
+    ['habits_50',total>=50],
+    ['habits_100',total>=100],
+  ];
+  for(const [id,ok] of checks){
+    if(!ok) continue;
+    const b=unlockBadge(id);
+    if(b) unlocked.push(b);
+  }
+  return unlocked;
+}
+
+function habitsCompletedToday(){
+  return (state.habits||[]).filter(habitDoneToday).length;
+}
+
+function allHabitsDoneToday(){
+  const total=(state.habits||[]).length;
+  return total>0&&habitsCompletedToday()===total;
+}
+
+function awardHabitGamification(habit){
+  const g=getGamification();
+  const today=todayStr();
+  const streak=calcHabitStreak(habit);
+  let xp=GAMIFICATION_XP.habitBase;
+  xp+=Math.min(streak,GAMIFICATION_XP.streakCap)*GAMIFICATION_XP.streakPerDay;
+  if(habitsCompletedToday()===1) xp+=GAMIFICATION_XP.firstOfDay;
+  g.totalHabitsCompleted=(g.totalHabitsCompleted||0)+1;
+  const prevLevel=g.level||1;
+  g.xp=(g.xp||0)+xp;
+  g.level=calcGamificationLevel(g.xp);
+  const leveledUp=g.level>prevLevel;
+  let perfectDay=false;
+  let perfectXp=0;
+  if(allHabitsDoneToday()&&!g.perfectDaysLog?.[today]){
+    if(!g.perfectDaysLog) g.perfectDaysLog={};
+    g.perfectDaysLog[today]=true;
+    g.perfectDays=Object.keys(g.perfectDaysLog).length;
+    perfectXp=GAMIFICATION_XP.perfectDay;
+    g.xp+=perfectXp;
+    g.level=calcGamificationLevel(g.xp);
+    perfectDay=true;
+  }
+  const badges=checkGamificationBadges(habit);
+  return {xp,streak,leveledUp,level:g.level,rank:gamificationRank(g.level),badges,perfectDay,perfectXp,habitName:habit.name};
+}
+
+function showXpFloat(text){
+  const wrap=document.getElementById('xp-popup-container');
+  if(!wrap) return;
+  const el=document.createElement('div');
+  el.className='xp-float';
+  el.textContent=text;
+  wrap.appendChild(el);
+  setTimeout(()=>el.remove(),1500);
+}
+
+function showPerfectDayOverlay(xpBonus){
+  const ov=document.getElementById('perfect-day-overlay');
+  const xpEl=document.getElementById('perfect-day-xp');
+  const sub=document.getElementById('perfect-day-sub');
+  if(xpEl) xpEl.textContent=`+${xpBonus} XP bônus`;
+  if(sub) sub.textContent=`Você completou todos os ${state.habits.length} hábitos de hoje. Disciplina de elite!`;
+  ov?.classList.add('show');
+}
+
+function closePerfectDayOverlay(){
+  document.getElementById('perfect-day-overlay')?.classList.remove('show');
+}
+window.closePerfectDayOverlay=closePerfectDayOverlay;
+
+function showGamificationFeedback(result){
+  if(!result) return;
+  let floatText=`+${result.xp} XP`;
+  if(result.streak>1) floatText+=` · 🔥${result.streak}`;
+  showXpFloat(floatText);
+  showToast('⭐',`${result.habitName} concluído!`,`+${result.xp} XP${result.streak>1?` · sequência ${result.streak} dias`:''}`);
+  if(result.leveledUp){
+    setTimeout(()=>{
+      showToast('🎉','Subiu de nível!',`Nível ${result.level} — ${result.rank}`);
+      showXpFloat(`Nível ${result.level}!`);
+    },400);
+  }
+  for(const b of result.badges||[]){
+    setTimeout(()=>showToast(b.icon,'Conquista desbloqueada!',`${b.name} — ${b.desc}`),800);
+  }
+  if(result.perfectDay){
+    setTimeout(()=>{
+      showPerfectDayOverlay(result.perfectXp||GAMIFICATION_XP.perfectDay);
+      showToast('🏆','Dia perfeito!','Todos os hábitos concluídos. Bônus de XP!');
+    },600);
+  }
+}
+
+function renderGamificationPanel(){
+  const g=getGamification();
+  const level=g.level||1;
+  const xp=g.xp||0;
+  const pct=xpProgressInLevel(xp,level);
+  const next=xpThresholdForLevel(level+1);
+  const rank=gamificationRank(level);
+  const earned=new Set(g.badges||[]);
+  const badgesHtml=GAMIFICATION_BADGES.slice(0,6).map(b=>{
+    const on=earned.has(b.id);
+    return `<span class="habit-badge-chip ${on?'':'locked'}" title="${b.desc}">${b.icon} ${b.name}</span>`;
+  }).join('');
+  const total=(state.habits||[]).length;
+  const done=habitsCompletedToday();
+  const bonusHtml=total
+    ?(done===total
+      ?`<div class="habit-daily-bonus">🏆 Dia perfeito conquistado! +${GAMIFICATION_XP.perfectDay} XP</div>`
+      :`<div class="habit-daily-bonus pending">${done}/${total} hábitos · complete todos para +${GAMIFICATION_XP.perfectDay} XP</div>`)
+    :'';
+  return `<div class="habit-gamification">
+    <div class="habit-gam-head">
+      <div class="habit-gam-level">
+        <div class="habit-level-badge">${level}</div>
+        <div>
+          <div class="habit-rank-title">${rank}</div>
+          <div class="habit-rank-sub">Nível ${level}</div>
+        </div>
+      </div>
+      <div class="habit-xp-total">${xp} XP</div>
+    </div>
+    <div class="habit-xp-bar"><div class="habit-xp-fill" style="width:${pct}%"></div></div>
+    <div class="habit-xp-label">${xp} / ${next} XP para o nível ${level+1}</div>
+    <div class="habit-badges-row">${badgesHtml}</div>
+    ${bonusHtml}
+  </div>`;
+}
+
 function toggleHabit(id){
   const h=state.habits.find(x=>x.id===id);
   if(!h) return;
   if(!h.log) h.log={};
   const t=todayStr();
-  if(h.log[t]) delete h.log[t];
-  else h.log[t]=true;
-  save();renderHabits();updateMetrics();
+  const wasDone=!!h.log[t];
+  if(wasDone){
+    delete h.log[t];
+    save();renderHabits();updateMetrics();
+    return;
+  }
+  h.log[t]=true;
+  const feedback=awardHabitGamification(h);
+  save();
+  renderHabits();
+  updateMetrics();
+  showGamificationFeedback(feedback);
 }
 function deleteHabit(id){
   state.habits=state.habits.filter(h=>h.id!==id);
@@ -3711,19 +4064,21 @@ function renderHabits(){
     el.innerHTML=emptyState('Nenhum hábito. Crie rotinas diárias!','🔁');
     return;
   }
-  const done=state.habits.filter(habitDoneToday).length;
-  el.innerHTML=state.habits.map(h=>{
+  const done=habitsCompletedToday();
+  const gamPanel=renderGamificationPanel();
+  el.innerHTML=gamPanel+state.habits.map(h=>{
     const checked=habitDoneToday(h);
     const streak=calcHabitStreak(h);
+    const xpHint=checked?'':`+${GAMIFICATION_XP.habitBase + Math.min(streak,GAMIFICATION_XP.streakCap)*GAMIFICATION_XP.streakPerDay} XP`;
     return `<div class="habit-item ${checked?'done':''}">
-      <div class="habit-check ${checked?'checked':''}" onclick="toggleHabit(${h.id})" title="${checked?'Desmarcar':'Concluir hoje'}">${checked?'✓':''}</div>
+      <div class="habit-check ${checked?'checked':''}" onclick="toggleHabit(${h.id})" title="${checked?'Desmarcar':`Concluir hoje (${xpHint})`}">${checked?'✓':''}</div>
       <div class="habit-info">
         <div class="habit-name">${h.icon||'✓'} ${h.name}</div>
-        <div class="habit-streak">Sequência: <strong>${streak}</strong> dia${streak!==1?'s':''}</div>
+        <div class="habit-streak">Sequência: <strong>${streak}</strong> dia${streak!==1?'s':''}${!checked&&xpHint?` · <span style="color:var(--accent-2)">${xpHint}</span>`:''}</div>
       </div>
       <button class="btn btn-icon danger" onclick="deleteHabit(${h.id})" title="Excluir hábito">✕</button>
     </div>`;
-  }).join('')+(done?`<div style="text-align:center;font-size:11px;color:var(--success);margin-top:8px;font-weight:600">${done}/${state.habits.length} hábitos concluídos hoje 🎉</div>`:'');
+  }).join('');
 }
 function goalProgress(g){
   if(!g.target) return 0;
@@ -3987,8 +4342,13 @@ function updateMetrics(){
   const mp=document.getElementById('m-pomodoro');
   const mh=document.getElementById('m-habits');
   if(mp) mp.textContent=state.pomodoro?.sessionsToday||0;
-  if(mh&&state.habits?.length) mh.textContent=`${state.habits.filter(habitDoneToday).length}/${state.habits.length}`;
+  if(mh&&state.habits?.length) mh.textContent=`${habitsCompletedToday()}/${state.habits.length}`;
   else if(mh) mh.textContent='0';
+  const ml=document.getElementById('m-level');
+  const mll=document.getElementById('m-level-label');
+  const g=getGamification();
+  if(ml) ml.textContent=String(g.level||1);
+  if(mll) mll.textContent=gamificationRank(g.level||1);
   const badge=document.getElementById('notif-count');
   if(badge) badge.textContent=String(computeNotifCount());
 }
