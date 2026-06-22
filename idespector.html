@@ -1913,16 +1913,19 @@
   /* TRADUTOR */
   #translator-card { display:flex; flex-direction:column; min-height:min(72vh, 640px); }
   .translator-wrap { display:flex; flex-direction:column; gap:16px; flex:1; min-height:0; }
-  .translator-lang { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .translator-lang { display:flex; flex-wrap:wrap; gap:8px; align-items:center; position:relative; z-index:2; }
   .lang-pill {
     padding:8px 14px; border-radius:999px; font-size:12px; font-weight:600;
     border:1px solid var(--border); background:var(--bg-glass);
     color:var(--text-secondary); cursor:pointer; transition:all .2s;
-    font-family:inherit;
+    font-family:inherit; position:relative; z-index:1;
+  }
+  .lang-pill:hover:not(.active) {
+    border-color:var(--border-bright); color:var(--text-primary);
   }
   .lang-pill.active {
-    background:var(--accent-dim); border-color:var(--border-bright);
-    color:var(--text-primary);
+    background:var(--accent-dim); border-color:var(--accent);
+    color:var(--text-primary); box-shadow:0 0 0 1px rgba(124,109,250,0.25);
   }
   .translator-grid {
     display:grid; grid-template-columns:1fr 1fr; gap:16px; flex:1; min-height:280px;
@@ -2454,17 +2457,17 @@
       </div>
       <div class="translator-wrap">
         <div class="translator-lang">
-          <button type="button" class="lang-pill active" data-dir="pt-en" onclick="setTranslatorDir('pt-en')">🇧🇷 Português → 🇺🇸 Inglês</button>
-          <button type="button" class="lang-pill" data-dir="en-pt" onclick="setTranslatorDir('en-pt')">🇺🇸 Inglês → 🇧🇷 Português</button>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="swapTranslatorDir()">⇄ Inverter</button>
+          <button type="button" class="lang-pill active" id="translator-pill-pt-en" data-dir="pt-en">🇧🇷 Português → 🇺🇸 Inglês</button>
+          <button type="button" class="lang-pill" id="translator-pill-en-pt" data-dir="en-pt">🇺🇸 Inglês → 🇧🇷 Português</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="translator-swap-btn">⇄ Inverter</button>
         </div>
         <div class="translator-grid">
           <div class="translator-pane">
             <label id="translator-source-label" for="translator-input">Português</label>
-            <textarea id="translator-input" class="translator-editor" placeholder="Digite o texto para traduzir..." onkeydown="if(event.ctrlKey&&event.key==='Enter'){event.preventDefault();runTranslation()}"></textarea>
+            <textarea id="translator-input" class="translator-editor" placeholder="Digite o texto para traduzir..."></textarea>
             <div class="translator-pane-actions">
               <button type="button" class="btn btn-ghost btn-sm" onclick="clearTranslatorInput()">Limpar</button>
-              <button type="button" class="btn btn-primary btn-sm" id="translator-run-btn" onclick="runTranslation()">Traduzir</button>
+              <button type="button" class="btn btn-primary btn-sm" id="translator-run-btn">Traduzir</button>
             </div>
           </div>
           <div class="translator-pane">
@@ -2988,7 +2991,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='36-translator';
+const APP_VERSION='36-translator-fix';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
@@ -5961,13 +5964,47 @@ function getTranslatorDir(){
 }
 
 function setTranslatorDir(dir){
+  if(dir!=='pt-en'&&dir!=='en-pt') return;
   state.translator=state.translator||{dir:'pt-en',history:[]};
   state.translator.dir=dir;
   save();
-  document.querySelectorAll('.lang-pill').forEach(p=>{
+  const card=document.getElementById('translator-card');
+  (card||document).querySelectorAll('.lang-pill[data-dir]').forEach(p=>{
     p.classList.toggle('active',p.dataset.dir===dir);
+    p.setAttribute('aria-pressed',p.dataset.dir===dir?'true':'false');
   });
   updateTranslatorLabels();
+  const status=document.getElementById('translator-status');
+  if(status){
+    status.textContent=dir==='pt-en'
+      ?'Modo: Português → Inglês. Ctrl+Enter para traduzir.'
+      :'Modo: Inglês → Português. Ctrl+Enter para traduzir.';
+  }
+}
+
+function initTranslator(){
+  const card=document.getElementById('translator-card');
+  if(!card||card.dataset.bound) return;
+  card.dataset.bound='1';
+  card.querySelectorAll('.lang-pill[data-dir]').forEach(pill=>{
+    pill.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      setTranslatorDir(pill.dataset.dir);
+    });
+  });
+  document.getElementById('translator-swap-btn')?.addEventListener('click',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    swapTranslatorDir();
+  });
+  document.getElementById('translator-run-btn')?.addEventListener('click',e=>{
+    e.preventDefault();
+    runTranslation();
+  });
+  document.getElementById('translator-input')?.addEventListener('keydown',e=>{
+    if(e.ctrlKey&&e.key==='Enter'){ e.preventDefault(); runTranslation(); }
+  });
 }
 
 function updateTranslatorLabels(){
@@ -6151,6 +6188,15 @@ function escHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+window.setTranslatorDir=setTranslatorDir;
+window.swapTranslatorDir=swapTranslatorDir;
+window.runTranslation=runTranslation;
+window.clearTranslatorInput=clearTranslatorInput;
+window.copyTranslation=copyTranslation;
+window.useTranslationAsInput=useTranslationAsInput;
+window.insertTranslatorPhrase=insertTranslatorPhrase;
+window.loadTranslatorHistory=loadTranslatorHistory;
+
 // ============================================================
 // NAV
 // ============================================================
@@ -6236,7 +6282,7 @@ function setView(view, el){
   if(headerEl) headerEl.classList.toggle('mode-compact', view==='dashboard');
 
   if (view === 'assistant') expandHeaderChat(true);
-  else if (view === 'dashboard') collapseHeaderChat();
+  else collapseHeaderChat();
 
   const content = document.getElementById('main-content');
   if (content) {
@@ -6256,7 +6302,10 @@ function setView(view, el){
   if (window.innerWidth <= 768) document.getElementById('sidebar')?.classList.remove('open');
   if (view === 'assistant') setTimeout(()=>expandHeaderChat(true), 120);
   if (view === 'notes') setTimeout(()=>document.getElementById('notes-textarea')?.focus(), 120);
-  if (view === 'translator') setTimeout(()=>document.getElementById('translator-input')?.focus(), 120);
+  if (view === 'translator') {
+    renderTranslator();
+    setTimeout(()=>document.getElementById('translator-input')?.focus(), 120);
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
   updateAssistantContext(view);
 }
@@ -6312,6 +6361,7 @@ function bootstrapApp(){
   if(appBootstrapped) return;
   appBootstrapped=true;
   load();
+  initTranslator();
   handleOutlookAuthCallback();
   ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
   updateClock();
