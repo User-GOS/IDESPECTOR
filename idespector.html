@@ -2636,6 +2636,12 @@ function migrateTranslator(){
   if(!state.translator){
     state.translator={dir:'pt-en',history:[]};
     save();
+    return;
+  }
+  if(state.translator.historyVersion!=='38'){
+    state.translator.history=[];
+    state.translator.historyVersion='38';
+    save();
   }
 }
 function migrateNotes(){
@@ -2859,7 +2865,7 @@ function createEmptyUserState(name){
     habits:[],goals:[],
     pomodoro:{workMin:25,shortBreak:5,longBreak:15,phase:'idle',endsAt:null,sessionsToday:0,date:null,totalMin:0},
     productivityTab:'pomodoro',
-    translator:{dir:'pt-en',history:[]},
+    translator:{dir:'pt-en',history:[],historyVersion:'38'},
     appVersion:APP_VERSION,
   };
 }
@@ -2991,7 +2997,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='37-translator-api';
+const APP_VERSION='38-translator-google';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
@@ -6137,48 +6143,66 @@ function splitTranslationChunks(text,max){
   return parts;
 }
 
-function pickBestTranslation(data, source){
-  const matches=Array.isArray(data?.matches)?data.matches:[];
-  const sorted=matches
-    .filter(m=>m?.translation&&!/MYMEMORY WARNING|INVALID/i.test(m.translation))
-    .sort((a,b)=>(Number(b.match)||0)-(Number(a.match)||0));
-  const srcWords=(source||'').trim().split(/\s+/).filter(Boolean).length;
-  for(const m of sorted){
-    const text=m.translation.trim();
-    const outWords=text.split(/\s+/).filter(Boolean).length;
-    if(srcWords<=2&&outWords>srcWords+1) continue;
-    return text;
+function normCompareTranslator(text){
+  return String(text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,'').replace(/\s+/g,' ').trim();
+}
+
+function isBadTranslation(source,result,langpair){
+  const a=normCompareTranslator(source);
+  const b=normCompareTranslator(result);
+  if(!b) return true;
+  if(a===b) return true;
+  const [from,to]=langpair.split('|');
+  if(from==='pt'&&to==='en'){
+    if(/[áàâãéêíóôõúç]/i.test(result)) return true;
+    const ptWords=/\b(eu|quero|ir|ao|cinema|café|cafe|obrigad|bom dia|preciso|ajuda)\b/i;
+    const enWords=/\b(the|and|want|go|to|movies|coffee|please|thank|i)\b/i;
+    if(ptWords.test(result)&&!enWords.test(result)) return true;
   }
-  const fallback=(data?.responseData?.translatedText||'').trim();
-  if(!fallback||/MYMEMORY WARNING|INVALID/i.test(fallback)) throw new Error('quota');
-  return fallback;
+  if(from==='en'&&to==='pt'){
+    const enWords=/\b(the|and|want|go|to|movies|coffee|please|thank|good morning)\b/i;
+    const ptWords=/\b(bom|dia|obrigad|preciso|ajuda|café|cafe|quero|cinema)\b/i;
+    if(enWords.test(result)&&!ptWords.test(result)&&!/[áàâãéêíóôõúç]/i.test(result)) return true;
+  }
+  return false;
 }
 
 async function fetchTranslationChunk(q,langpair){
   const proxyUrl=`/api/translate?q=${encodeURIComponent(q)}&langpair=${encodeURIComponent(langpair)}`;
-  try{
-    const res=await fetch(proxyUrl,{cache:'no-store'});
-    const data=await res.json();
-    if(res.ok&&data.ok&&data.text) return data.text;
-    if(data?.error) throw new Error(data.error);
-  }catch(proxyErr){
-    if(location.protocol==='file:') throw new Error('file');
+  const res=await fetch(proxyUrl,{cache:'no-store'});
+  let data=null;
+  try{ data=await res.json(); }catch(_){}
+  if(res.ok&&data?.ok&&data?.text){
+    if(isBadTranslation(q,data.text,langpair)) throw new Error('invalid');
+    return data.text;
   }
+  if(location.protocol==='file:') throw new Error('file');
+  throw new Error(data?.error||'translate');
+}
 
-  const directUrl=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(q)}&langpair=${langpair}`;
-  const res=await fetch(directUrl,{cache:'no-store'});
+async function translateViaGoogleDirect(q,langpair){
+  const [from,to]=langpair.split('|');
+  const url=`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(q)}`;
+  const res=await fetch(url,{cache:'no-store'});
   if(!res.ok) throw new Error('network');
   const data=await res.json();
-  if(Number(data.responseStatus)!==200) throw new Error(data.responseDetails||'api');
-  return pickBestTranslation(data,q);
+  const text=(Array.isArray(data?.[0])?data[0].map(p=>p?.[0]||'').join(''):'').trim();
+  if(!text||isBadTranslation(q,text,langpair)) throw new Error('invalid');
+  return text;
 }
 
 async function translateText(text,langpair){
   const chunks=splitTranslationChunks(text,450);
   const out=[];
   for(let i=0;i<chunks.length;i++){
-    out.push(await fetchTranslationChunk(chunks[i],langpair));
-    if(i<chunks.length-1) await new Promise(r=>setTimeout(r,350));
+    let translated=null;
+    try{
+      translated=await fetchTranslationChunk(chunks[i],langpair);
+    }catch(_){
+      translated=await translateViaGoogleDirect(chunks[i],langpair);
+    }
+    out.push(translated);
+    if(i<chunks.length-1) await new Promise(r=>setTimeout(r,200));
   }
   return out.join(' ');
 }
@@ -6208,7 +6232,9 @@ async function runTranslation(){
   }catch(e){
     const msg=e?.message==='file'
       ?'Abra pelo servidor local (iniciar.bat) ou pelo site na Vercel para traduzir.'
-      :'Erro na tradução. Verifique a conexão e tente novamente.';
+      :(e?.message==='invalid'
+        ?'A tradução retornou o mesmo idioma. Tente novamente em instantes.'
+        :(e?.message&&e.message!=='translate'?e.message:'Erro na tradução. Verifique a conexão e tente novamente.'));
     if(status) status.textContent=msg;
     showToast('⚠️','Erro',msg);
   }finally{

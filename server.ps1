@@ -38,6 +38,23 @@ function Read-JsonBody($request) {
     return $body | ConvertFrom-Json
 }
 
+function Invoke-GoogleTranslate($text, $from, $to) {
+    $url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=$from&tl=$to&dt=t&q=" + [uri]::EscapeDataString($text)
+    $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 25
+    $json = $resp.Content | ConvertFrom-Json
+    $out = ""
+    if ($json -and $json[0]) {
+        foreach ($part in $json[0]) {
+            if ($part -and $part[0]) { $out += [string]$part[0] }
+        }
+    }
+    $out = $out.Trim()
+    if ([string]::IsNullOrWhiteSpace($out)) {
+        throw "Resposta vazia do Google Translate"
+    }
+    return $out
+}
+
 function Invoke-TelegramGet($token, $method, $query) {
     $url = "https://api.telegram.org/bot$token/$method"
     if ($query) { $url += "?" + $query }
@@ -129,24 +146,37 @@ while ($listener.IsListening) {
                 continue
             }
             try {
-                $apiUrl = "https://api.mymemory.translated.net/get?q=" + [uri]::EscapeDataString($q) + "&langpair=" + [uri]::EscapeDataString($langpair)
-                $api = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 25
-                if ([int]$api.responseStatus -ne 200) {
-                    Send-Json $response 502 @{ ok = $false; error = $api.responseDetails }
-                    continue
-                }
-                $text = [string]$api.responseData.translatedText
-                if ($api.matches -and $api.matches.Count -gt 0) {
-                    $best = $api.matches | Where-Object { $_.translation -and $_.translation -notmatch 'MYMEMORY WARNING|INVALID' } | Sort-Object { [double]$_.match } -Descending | Select-Object -First 1
-                    if ($best) { $text = [string]$best.translation }
-                }
-                if ([string]::IsNullOrWhiteSpace($text) -or $text -match 'MYMEMORY WARNING|INVALID') {
-                    Send-Json $response 502 @{ ok = $false; error = "Traducao indisponivel" }
-                    continue
-                }
-                Send-Json $response 200 @{ ok = $true; text = $text.Trim(); langpair = $langpair }
+                $parts = $langpair -split '\|', 2
+                $from = $parts[0]
+                $to = $parts[1]
+                $text = Invoke-GoogleTranslate $q $from $to
+                Send-Json $response 200 @{ ok = $true; text = $text; langpair = $langpair; provider = "google" }
             } catch {
-                Send-Json $response 502 @{ ok = $false; error = "Erro ao traduzir: $($_.Exception.Message)" }
+                try {
+                    $apiUrl = "https://api.mymemory.translated.net/get?q=" + [uri]::EscapeDataString($q) + "&langpair=" + [uri]::EscapeDataString($langpair)
+                    $api = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 25
+                    if ([int]$api.responseStatus -ne 200) {
+                        Send-Json $response 502 @{ ok = $false; error = $api.responseDetails }
+                        continue
+                    }
+                    $text = [string]$api.responseData.translatedText
+                    if ($api.matches -and $api.matches.Count -gt 0) {
+                        foreach ($m in ($api.matches | Sort-Object { [double]$_.match } -Descending)) {
+                            $candidate = [string]$m.translation
+                            if (-not [string]::IsNullOrWhiteSpace($candidate) -and $candidate -notmatch 'MYMEMORY WARNING|INVALID' -and ($candidate.ToLower() -ne $q.ToLower())) {
+                                $text = $candidate
+                                break
+                            }
+                        }
+                    }
+                    if ([string]::IsNullOrWhiteSpace($text) -or $text -match 'MYMEMORY WARNING|INVALID') {
+                        Send-Json $response 502 @{ ok = $false; error = "Traducao indisponivel" }
+                        continue
+                    }
+                    Send-Json $response 200 @{ ok = $true; text = $text.Trim(); langpair = $langpair; provider = "mymemory" }
+                } catch {
+                    Send-Json $response 502 @{ ok = $false; error = "Erro ao traduzir: $($_.Exception.Message)" }
+                }
             }
             continue
         }
