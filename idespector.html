@@ -260,7 +260,7 @@
     width:100%; height:42px;
     display:flex; align-items:center;
     border-radius:10px; cursor:pointer;
-    transition: all .18s ease;
+    transition: all .22s var(--ease-out);
     color: var(--text-secondary);
     padding:0 10px; gap:10px;
     border: 1px solid transparent;
@@ -270,7 +270,9 @@
     background: var(--bg-glass);
     color: var(--text-primary);
     border-color: var(--border);
+    transform:translateX(4px);
   }
+  .nav-item:active { transform:translateX(2px) scale(0.98); }
   .nav-item.active {
     background: linear-gradient(135deg, var(--accent-dim), rgba(192,132,252,0.08));
     border-color: var(--border-bright);
@@ -300,7 +302,7 @@
   .grid-2.view-single,
   .dashboard-bento.view-single,
   .dashboard-balanced.view-single { grid-template-columns: 1fr; }
-  .view-panel { animation: viewFadeIn .3s ease; }
+  .view-panel { animation: viewFadeIn .42s var(--ease-out); }
   .view-focused .card { animation: viewFadeIn .25s ease; }
   .dashboard-bento {
     display:grid; grid-template-columns:1.2fr 0.8fr; gap:20px;
@@ -327,6 +329,53 @@
   }
   .view-dashboard-compact .quick-strip-btn .qs-icon { width:26px; height:26px; font-size:13px; }
   @keyframes viewFadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+  /* FLUIDITY — microinterações e entrada suave */
+  @keyframes uiStaggerIn {
+    from { opacity:0; transform:translateY(16px) scale(0.98); }
+    to { opacity:1; transform:none; }
+  }
+  @keyframes clockTick {
+    0% { transform:scale(1); text-shadow:none; }
+    35% { transform:scale(1.015); text-shadow:0 0 18px rgba(168,85,247,0.35); }
+    100% { transform:scale(1); text-shadow:none; }
+  }
+  @keyframes metricPop {
+    0% { transform:scale(1); }
+    45% { transform:scale(1.14); }
+    100% { transform:scale(1); }
+  }
+  @keyframes checkBounce {
+    0% { transform:scale(1); }
+    45% { transform:scale(1.2); }
+    100% { transform:scale(1); }
+  }
+  @keyframes rippleOut {
+    from { transform:scale(0); opacity:0.42; }
+    to { transform:scale(2.6); opacity:0; }
+  }
+  @keyframes pomoRingPulse {
+    0%,100% { filter:drop-shadow(0 0 4px rgba(168,85,247,0.15)); }
+    50% { filter:drop-shadow(0 0 14px rgba(168,85,247,0.45)); }
+  }
+  .ui-animate { animation:uiStaggerIn .52s var(--ease-out) both; }
+  .ui-ripple {
+    position:absolute; border-radius:50%; pointer-events:none; z-index:2;
+    background:rgba(255,255,255,0.28); animation:rippleOut .55s var(--ease-out) forwards;
+  }
+  .metric-num.metric-pop { animation:metricPop .38s var(--ease-out); display:inline-block; }
+  .foco-time.clock-tick, .header-time.clock-tick { animation:clockTick .45s var(--ease-out); }
+  .pomodoro-active .pomodoro-ring { animation:pomoRingPulse 2.2s ease-in-out infinite; }
+  .pomodoro-active .pomodoro-time-val { color:var(--accent-2); transition:color .3s; }
+  .habit-check.checked { animation:checkBounce .38s var(--ease-out); }
+  .task-check.checked { animation:checkBounce .38s var(--ease-out); }
+  .btn, .quick-strip-btn, .nav-item, .metric-card.clickable { position:relative; overflow:hidden; }
+  @media (prefers-reduced-motion:reduce) {
+    .ui-animate,.metric-pop,.clock-tick,.pomodoro-active .pomodoro-ring,
+    .habit-check.checked,.task-check.checked,.chip.live,.ui-ripple {
+      animation:none !important;
+    }
+  }
   .view-bar {
     display:flex; align-items:center; justify-content:space-between;
     margin-bottom:24px; padding-bottom:0;
@@ -363,6 +412,11 @@
     display: flex; flex-direction:column; gap:10px;
     box-shadow: var(--shadow-card);
     margin-bottom: var(--space-5);
+    transition:border-color .3s var(--ease-out), box-shadow .3s var(--ease-out), transform .3s var(--ease-out);
+  }
+  .header:hover {
+    border-color:var(--border-bright);
+    box-shadow:var(--shadow-hover);
   }
   [data-theme="light"] .header { background: rgba(255,255,255,0.92); }
   .header.mode-compact { padding:10px 14px; gap:0; margin-bottom:var(--space-4); }
@@ -794,15 +848,17 @@
     padding:14px 18px; border-radius:var(--radius-md); cursor:pointer;
     background:var(--bg-card); border:1px solid var(--border);
     color:var(--text-primary); font-size:13px; font-weight:600;
-    font-family:'Plus Jakarta Sans',sans-serif; transition:all .22s var(--ease-out);
+    font-family:'Plus Jakarta Sans',sans-serif; transition:all .26s var(--ease-out);
     flex:1; min-width:min(180px, 100%);
+    position:relative; overflow:hidden;
   }
   .quick-strip-btn:hover {
     border-color:var(--border-bright);
-    transform:translateY(-2px);
-    box-shadow:var(--shadow-card);
+    transform:translateY(-3px) scale(1.01);
+    box-shadow:var(--shadow-hover);
     background:var(--bg-elevated);
   }
+  .quick-strip-btn:active { transform:translateY(-1px) scale(0.98); }
   .quick-strip-btn.primary {
     background:linear-gradient(135deg, rgba(168,85,247,0.2), rgba(192,132,252,0.1));
     border-color:var(--border-bright);
@@ -839,11 +895,21 @@
     backdrop-filter: blur(16px);
     border: 1px solid var(--border);
     border-radius:var(--radius-lg); padding:20px;
-    transition: border-color .2s, box-shadow .2s;
+    transition: border-color .28s var(--ease-out), box-shadow .28s var(--ease-out), transform .28s var(--ease-out);
     position:relative; overflow:hidden;
     box-shadow:var(--shadow-card);
   }
-  .card:hover { border-color: var(--border-bright); box-shadow: var(--shadow-hover); }
+  .card::after {
+    content:''; position:absolute; inset:0; pointer-events:none; opacity:0;
+    background:linear-gradient(135deg, rgba(168,85,247,0.1), transparent 55%);
+    transition:opacity .35s var(--ease-out);
+  }
+  .card:hover {
+    border-color: var(--border-bright);
+    box-shadow: var(--shadow-hover);
+    transform:translateY(-3px);
+  }
+  .card:hover::after { opacity:1; }
   .card-header {
     display:flex; align-items:center; justify-content:space-between;
     margin-bottom:20px;
@@ -876,13 +942,17 @@
     border: 1px solid var(--border);
     border-radius:var(--radius-md); padding:18px 20px;
     display:flex; align-items:center; gap:14px;
-    transition: border-color .2s, transform .2s;
+    transition: border-color .26s var(--ease-out), transform .26s var(--ease-out), box-shadow .26s var(--ease-out);
     box-shadow:var(--shadow-card);
     position:relative; overflow:hidden;
   }
-  .metric-card:hover { border-color: var(--border-bright); transform:translateY(-2px); }
+  .metric-card:hover {
+    border-color: var(--border-bright);
+    transform:translateY(-3px) scale(1.01);
+    box-shadow:var(--shadow-hover);
+  }
   .metric-card.clickable { cursor:pointer; }
-  .metric-card.clickable:active { transform:translateY(-1px) scale(1); }
+  .metric-card.clickable:active { transform:translateY(-1px) scale(0.99); }
   .metric-icon {
     width:48px; height:48px; border-radius:14px;
     display:flex; align-items:center; justify-content:center;
@@ -930,6 +1000,7 @@
   .btn-secondary:hover:not(:disabled) {
     background:var(--accent-dim); border-color:var(--accent);
     color:var(--text-primary);
+    transform:translateY(-1px);
   }
   .btn-ghost {
     background:transparent; color:var(--text-secondary);
@@ -1098,11 +1169,14 @@
     background:var(--bg-glass);
     border:1px solid var(--border);
     margin-bottom:10px;
-    transition:border-color .22s, box-shadow .22s;
+    transition:border-color .26s var(--ease-out), box-shadow .26s var(--ease-out), transform .26s var(--ease-out);
     cursor:default;
   }
-  .task-item:last-child { margin-bottom:0; }
-  .task-item:hover { border-color:var(--border-bright); box-shadow:0 4px 20px rgba(0,0,0,0.12); }
+  .task-item:hover {
+    transform:translateX(3px);
+    border-color:var(--border-bright);
+    box-shadow:0 4px 20px rgba(0,0,0,0.12);
+  }
   .task-item.done { opacity:.55; }
   .task-item.done .task-text { text-decoration:line-through; color:var(--text-muted); }
   .task-check {
@@ -2618,7 +2692,7 @@
     <div class="card" id="clock-card">
       <div class="card-header">
         <div class="card-title"><span class="dot"></span>Foco & Tempo</div>
-        <div class="chip green">Ao vivo</div>
+        <div class="chip green live">Ao vivo</div>
       </div>
       <div class="foco-layout">
         <div class="foco-info">
@@ -3292,7 +3366,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='44-fix-ui-stack';
+const APP_VERSION='45-ui-fluidity';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
@@ -3346,6 +3420,72 @@ function load(){
 }
 
 // ============================================================
+// UI FLUIDITY
+// ============================================================
+let _lastClockSecond=-1;
+function pulseClockTick(){
+  const sec=new Date().getSeconds();
+  if(sec===_lastClockSecond) return;
+  _lastClockSecond=sec;
+  ['header-clock','main-clock'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.classList.remove('clock-tick');
+    void el.offsetWidth;
+    el.classList.add('clock-tick');
+  });
+}
+function setMetricAnimated(id,value){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const next=String(value);
+  if(el.dataset.value===next) return;
+  el.dataset.value=next;
+  el.textContent=next;
+  el.classList.remove('metric-pop');
+  void el.offsetWidth;
+  el.classList.add('metric-pop');
+}
+function animateDashboardBlocks(){
+  const content=document.getElementById('main-content');
+  if(!content||state.currentView!=='dashboard') return;
+  const selectors=[
+    '#quick-strip .quick-strip-btn',
+    '#metrics-grid .metric-card',
+    '#row-productivity .card',
+    '#row-dashboard-top .card',
+    '#row-tasks-reminders .card',
+    '#row-goals-kanban .card',
+    '#row-dashboard-bottom .card',
+  ];
+  let delay=0;
+  selectors.forEach(sel=>{
+    content.querySelectorAll(sel).forEach(el=>{
+      el.classList.remove('ui-animate');
+      el.style.animationDelay=delay+'ms';
+      void el.offsetWidth;
+      el.classList.add('ui-animate');
+      delay+=42;
+    });
+  });
+}
+function initRippleEffects(){
+  document.addEventListener('click',e=>{
+    const t=e.target.closest('.btn,.quick-strip-btn,.nav-item,.metric-card.clickable');
+    if(!t||t.disabled) return;
+    const rect=t.getBoundingClientRect();
+    const size=Math.max(rect.width,rect.height);
+    const ripple=document.createElement('span');
+    ripple.className='ui-ripple';
+    ripple.style.width=ripple.style.height=size+'px';
+    ripple.style.left=(e.clientX-rect.left-size/2)+'px';
+    ripple.style.top=(e.clientY-rect.top-size/2)+'px';
+    t.appendChild(ripple);
+    ripple.addEventListener('animationend',()=>ripple.remove());
+  },{passive:true});
+}
+
+// ============================================================
 // CLOCK
 // ============================================================
 function updateClock(){
@@ -3367,6 +3507,7 @@ function updateClock(){
   document.getElementById('greeting-tag').textContent=new Date().toLocaleString('pt-BR',{weekday:'long'}).replace(/^\w/,c=>c.toUpperCase());
   checkAlarms(now);
   tickPomodoro();
+  pulseClockTick();
 }
 
 function resetWhatsAppSentIfNeeded(){
@@ -3792,6 +3933,8 @@ function renderPomodoro(updateWidget=true){
   const circ=2*Math.PI*62;
   const dash=circ*(pct/100);
   const running=p.phase!=='idle';
+  const card=document.getElementById('pomodoro-card');
+  if(card) card.classList.toggle('pomodoro-active',running);
   el.innerHTML=`
     <svg width="0" height="0" aria-hidden="true"><defs><linearGradient id="pomoGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-2)"/></linearGradient></defs></svg>
     <div class="pomodoro-ring">
@@ -4338,19 +4481,16 @@ function computeNotifCount(){
 }
 
 function updateMetrics(){
-  document.getElementById('m-done').textContent=state.tasks.filter(t=>t.done).length;
-  document.getElementById('m-pending').textContent=state.tasks.filter(t=>!t.done).length;
-  document.getElementById('m-reminders').textContent=state.reminders.length;
-  document.getElementById('m-alarms').textContent=state.alarms.filter(a=>a.on).length;
-  const mp=document.getElementById('m-pomodoro');
-  const mh=document.getElementById('m-habits');
-  if(mp) mp.textContent=state.pomodoro?.sessionsToday||0;
-  if(mh&&state.habits?.length) mh.textContent=`${habitsCompletedToday()}/${state.habits.length}`;
-  else if(mh) mh.textContent='0';
-  const ml=document.getElementById('m-level');
-  const mll=document.getElementById('m-level-label');
+  setMetricAnimated('m-done',state.tasks.filter(t=>t.done).length);
+  setMetricAnimated('m-pending',state.tasks.filter(t=>!t.done).length);
+  setMetricAnimated('m-reminders',state.reminders.length);
+  setMetricAnimated('m-alarms',state.alarms.filter(a=>a.on).length);
+  setMetricAnimated('m-pomodoro',state.pomodoro?.sessionsToday||0);
+  if(state.habits?.length) setMetricAnimated('m-habits',`${habitsCompletedToday()}/${state.habits.length}`);
+  else setMetricAnimated('m-habits','0');
   const g=getGamification();
-  if(ml) ml.textContent=String(g.level||1);
+  setMetricAnimated('m-level',g.level||1);
+  const mll=document.getElementById('m-level-label');
   if(mll) mll.textContent=gamificationRank(g.level||1);
   const badge=document.getElementById('notif-count');
   if(badge) badge.textContent=String(computeNotifCount());
@@ -6977,6 +7117,7 @@ function setView(view, el){
     content.classList.remove('view-panel');
     void content.offsetWidth;
     content.classList.add('view-panel');
+    if(view==='dashboard') animateDashboardBlocks();
   }
 
   document.querySelectorAll('.sidebar .nav-item').forEach(item => {
@@ -7045,6 +7186,7 @@ function initChat(){
 function bootstrapApp(){
   if(appBootstrapped) return;
   appBootstrapped=true;
+  initRippleEffects();
   load();
   initTranslator();
   handleOutlookAuthCallback();
