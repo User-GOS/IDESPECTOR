@@ -2279,7 +2279,73 @@
     }
     .level-up-overlay.show { background:rgba(10,6,18,0.9); backdrop-filter:blur(8px); }
     .level-up-overlay.show .level-up-card { opacity:1; transform:none; }
+    .game-zero-overlay.show,.game-zero-card,.game-zero-particle { animation:none !important; }
+    .game-zero-overlay.show { background:rgba(10,6,18,0.92); }
+    .game-zero-overlay.show .game-zero-card { opacity:1; transform:none; }
   }
+
+  /* GAME ZERADO — vitória no nível máximo */
+  .game-zero-overlay {
+    position:fixed; inset:0; z-index:246000;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(6,4,12,0); opacity:0; pointer-events:none; overflow:hidden;
+  }
+  .game-zero-overlay.show {
+    opacity:1; pointer-events:auto;
+    animation:gameZeroBackdrop .8s var(--ease-out) forwards;
+  }
+  @keyframes gameZeroBackdrop {
+    0% { background:rgba(251,191,36,0.35); }
+    40% { background:rgba(10,6,18,0.9); backdrop-filter:blur(14px); }
+    100% { background:rgba(6,4,12,0.88); backdrop-filter:blur(16px); }
+  }
+  .game-zero-burst { position:absolute; inset:0; pointer-events:none; }
+  .game-zero-particle {
+    position:absolute; border-radius:2px; transform:rotate(45deg);
+    animation:gameZeroParticle 1.4s var(--ease-out) forwards; opacity:0;
+  }
+  @keyframes gameZeroParticle {
+    0% { opacity:1; transform:rotate(45deg) translate(0,0) scale(1); }
+    100% { opacity:0; transform:rotate(45deg) translate(var(--tx),var(--ty)) scale(0.15); }
+  }
+  .game-zero-card {
+    position:relative; text-align:center; max-width:440px; width:92%;
+    padding:44px 36px 36px; border-radius:30px;
+    background:linear-gradient(165deg, rgba(251,191,36,0.22), rgba(124,58,237,0.18) 40%, rgba(10,6,18,0.98) 70%);
+    border:1px solid rgba(251,191,36,0.45);
+    box-shadow:0 0 0 1px rgba(168,85,247,0.25), 0 40px 120px rgba(168,85,247,0.4);
+    transform:scale(0.5) translateY(60px); opacity:0;
+  }
+  .game-zero-overlay.show .game-zero-card {
+    animation:gameZeroCardPop .9s cubic-bezier(.34,1.56,.64,1) .12s forwards;
+  }
+  @keyframes gameZeroCardPop {
+    0% { opacity:0; transform:scale(0.45) translateY(64px) rotate(-3deg); }
+    65% { opacity:1; transform:scale(1.08) translateY(-6px) rotate(1deg); }
+    100% { opacity:1; transform:scale(1) translateY(0) rotate(0); }
+  }
+  .game-zero-icon { font-size:72px; line-height:1; margin-bottom:8px; animation:gameZeroIcon 2s ease-in-out infinite; }
+  @keyframes gameZeroIcon {
+    0%,100% { transform:scale(1) rotate(0deg); filter:drop-shadow(0 0 20px rgba(251,191,36,0.4)); }
+    50% { transform:scale(1.08) rotate(6deg); filter:drop-shadow(0 0 36px rgba(251,191,36,0.7)); }
+  }
+  .game-zero-title {
+    font-size:32px; font-weight:900; letter-spacing:2px;
+    background:linear-gradient(135deg, #fbbf24, #f3eef8, #d8b4fe);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    margin-bottom:8px;
+  }
+  .game-zero-rank { font-size:22px; font-weight:800; color:var(--accent-2); margin-bottom:10px; }
+  .game-zero-sub { font-size:14px; color:var(--text-secondary); line-height:1.55; margin-bottom:26px; }
+  .habit-game-cleared {
+    text-align:center; font-size:11px; font-weight:800; letter-spacing:1px;
+    text-transform:uppercase; margin-top:10px; padding:10px 12px; border-radius:10px;
+    background:linear-gradient(135deg, rgba(251,191,36,0.15), rgba(168,85,247,0.12));
+    border:1px solid rgba(251,191,36,0.35); color:#fcd34d;
+  }
+  .habit-gam-actions { display:flex; justify-content:flex-end; margin-top:8px; }
+  .habit-reset-game { font-size:10px !important; opacity:0.65; }
+  .habit-reset-game:hover { opacity:1; }
   .goal-item {
     padding:14px; border-radius:12px; background:var(--bg-glass);
     border:1px solid var(--border); margin-bottom:10px;
@@ -2998,6 +3064,16 @@
     <button type="button" class="btn btn-primary" onclick="closeLevelUpOverlay()">Incrível!</button>
   </div>
 </div>
+<div class="game-zero-overlay" id="game-zero-overlay" role="dialog" aria-label="Game zerado">
+  <div class="game-zero-burst" id="game-zero-burst"></div>
+  <div class="game-zero-card">
+    <div class="game-zero-icon">🎮</div>
+    <div class="game-zero-title">GAME ZERADO</div>
+    <div class="game-zero-rank" id="game-zero-rank">Inspetor</div>
+    <div class="game-zero-sub" id="game-zero-sub">Você alcançou o nível máximo de hábitos. Disciplina lendária — você zerou o game!</div>
+    <button type="button" class="btn btn-primary" onclick="closeGameZeroOverlay()">Lendário!</button>
+  </div>
+</div>
 <div class="focus-overlay" id="focus-overlay">
   <div class="focus-title">◈ MODO FOCO ATIVADO</div>
   <div class="focus-clock" id="focus-clock-display">00:00:00</div>
@@ -3096,7 +3172,7 @@ function migrateGamification(){
   if(!state.gamification){
     state.gamification={
       xp:0,level:1,totalHabitsCompleted:0,
-      perfectDays:0,perfectDaysLog:{},badges:[],
+      perfectDays:0,perfectDaysLog:{},badges:[],gameCleared:false,
     };
     save();
     return;
@@ -3105,6 +3181,7 @@ function migrateGamification(){
   if(!g.badges) g.badges=[];
   if(!g.perfectDaysLog) g.perfectDaysLog={};
   if(g.perfectDays===undefined) g.perfectDays=Object.keys(g.perfectDaysLog).length;
+  if(g.gameCleared===undefined) g.gameCleared=calcGamificationLevel(g.xp||0)>=GAME_MAX_LEVEL;
   g.level=calcGamificationLevel(g.xp||0);
 }
 function migrateTranslator(){
@@ -3348,7 +3425,7 @@ function createEmptyUserState(name){
     currentView:'dashboard',taskFilter:null,
     notes:{content:'',updated:null},
     habits:[],goals:[],
-    gamification:{xp:0,level:1,totalHabitsCompleted:0,perfectDays:0,perfectDaysLog:{},badges:[]},
+    gamification:{xp:0,level:1,totalHabitsCompleted:0,perfectDays:0,perfectDaysLog:{},badges:[],gameCleared:false},
     pomodoro:{workMin:25,shortBreak:5,longBreak:15,phase:'idle',endsAt:null,sessionsToday:0,date:null,totalMin:0},
     productivityTab:'pomodoro',
     translator:{dir:'pt-en',history:[],historyVersion:'38'},
@@ -3483,7 +3560,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='48-level-up-anim';
+const APP_VERSION='49-game-zero';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
@@ -4353,6 +4430,7 @@ const GAMIFICATION_XP={
   perfectDay:50,
   firstOfDay:5,
 };
+const GAME_MAX_LEVEL=10;
 
 function getGamification(){
   migrateGamification();
@@ -4456,7 +4534,9 @@ function awardHabitGamification(habit){
     perfectDay=true;
   }
   const badges=checkGamificationBadges(habit);
-  return {xp,streak,leveledUp,prevLevel,level:g.level,rank:gamificationRank(g.level),badges,perfectDay,perfectXp,habitName:habit.name};
+  const gameZeroed=g.level>=GAME_MAX_LEVEL&&prevLevel<GAME_MAX_LEVEL;
+  if(gameZeroed) g.gameCleared=true;
+  return {xp,streak,leveledUp,prevLevel,level:g.level,rank:gamificationRank(g.level),badges,perfectDay,perfectXp,gameZeroed,habitName:habit.name};
 }
 
 function showXpFloat(text){
@@ -4533,9 +4613,64 @@ function closeLevelUpOverlay(){
   document.getElementById('level-up-overlay')?.classList.remove('show');
   document.body.classList.remove('level-up-active');
   document.getElementById('level-up-burst')?.replaceChildren();
+  if(window._pendingGameZero){
+    const fn=window._pendingGameZero;
+    window._pendingGameZero=null;
+    setTimeout(fn,400);
+  }
 }
 window.closeLevelUpOverlay=closeLevelUpOverlay;
 window.showLevelUpOverlay=showLevelUpOverlay;
+
+function spawnGameZeroParticles(){
+  const burst=document.getElementById('game-zero-burst');
+  if(!burst) return;
+  burst.innerHTML='';
+  const colors=['#fbbf24','#fcd34d','#d8b4fe','#a855f7','#fff','#34d399'];
+  for(let i=0;i<72;i++){
+    const p=document.createElement('span');
+    p.className='game-zero-particle';
+    const angle=Math.random()*Math.PI*2;
+    const dist=100+Math.random()*320;
+    p.style.setProperty('--tx',(Math.cos(angle)*dist)+'px');
+    p.style.setProperty('--ty',(Math.sin(angle)*dist)+'px');
+    p.style.animationDelay=(Math.random()*0.35)+'s';
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    p.style.width=p.style.height=(6+Math.random()*10)+'px';
+    burst.appendChild(p);
+  }
+}
+function showGameZeroOverlay(level,rank){
+  const ov=document.getElementById('game-zero-overlay');
+  const rankEl=document.getElementById('game-zero-rank');
+  const sub=document.getElementById('game-zero-sub');
+  if(!ov) return;
+  if(rankEl) rankEl.textContent=`${rank||gamificationRank(level)} · Nível ${level}`;
+  if(sub) sub.textContent='Você alcançou o nível máximo de hábitos. Disciplina lendária — você zerou o game!';
+  spawnGameZeroParticles();
+  ov.classList.add('show');
+  document.body.classList.add('level-up-active');
+  try{ unlockAudio(); }catch(e){}
+}
+function closeGameZeroOverlay(){
+  document.getElementById('game-zero-overlay')?.classList.remove('show');
+  document.body.classList.remove('level-up-active');
+  document.getElementById('game-zero-burst')?.replaceChildren();
+}
+window.closeGameZeroOverlay=closeGameZeroOverlay;
+
+function resetGamificationGame(){
+  if(!confirm('Zerar todo o progresso do game?\n\nNível, XP, conquistas e dias perfeitos voltam ao zero.')) return;
+  state.gamification={
+    xp:0,level:1,totalHabitsCompleted:0,
+    perfectDays:0,perfectDaysLog:{},badges:[],gameCleared:false,
+  };
+  save();
+  renderHabits();
+  updateMetrics();
+  showToast('🎮','Game zerado!','Progresso reiniciado. Boa sorte na nova jornada!');
+}
+window.resetGamificationGame=resetGamificationGame;
 
 function showGamificationFeedback(result){
   if(!result) return;
@@ -4543,13 +4678,20 @@ function showGamificationFeedback(result){
   if(result.streak>1) floatText+=` · 🔥${result.streak}`;
   showXpFloat(floatText);
   showToast('⭐',`${result.habitName} concluído!`,`+${result.xp} XP${result.streak>1?` · sequência ${result.streak} dias`:''}`);
+  if(result.gameZeroed){
+    window._pendingGameZero=()=>showGameZeroOverlay(result.level,result.rank);
+  }
   if(result.leveledUp){
     const levelFn=()=>showLevelUpOverlay(result.level,result.rank,result.prevLevel);
     if(result.perfectDay){
       window._pendingLevelUp=levelFn;
+    }else if(result.gameZeroed){
+      window._pendingLevelUp=levelFn;
     }else{
       setTimeout(levelFn,550);
     }
+  }else if(result.gameZeroed){
+    setTimeout(()=>showGameZeroOverlay(result.level,result.rank),650);
   }
   for(const b of result.badges||[]){
     setTimeout(()=>showToast(b.icon,'Conquista desbloqueada!',`${b.name} — ${b.desc}`),800);
@@ -4564,11 +4706,13 @@ function showGamificationFeedback(result){
 
 function renderGamificationPanel(){
   const g=getGamification();
-  const level=g.level||1;
   const xp=g.xp||0;
+  const level=calcGamificationLevel(xp);
+  if(g.level!==level){ g.level=level; save(); }
   const pct=xpProgressInLevel(xp,level);
   const next=xpThresholdForLevel(level+1);
   const rank=gamificationRank(level);
+  const maxed=level>=GAME_MAX_LEVEL||g.gameCleared;
   const earned=new Set(g.badges||[]);
   const badgesHtml=GAMIFICATION_BADGES.slice(0,6).map(b=>{
     const on=earned.has(b.id);
@@ -4581,6 +4725,10 @@ function renderGamificationPanel(){
       ?`<div class="habit-daily-bonus">🏆 Dia perfeito conquistado! +${GAMIFICATION_XP.perfectDay} XP</div>`
       :`<div class="habit-daily-bonus pending">${done}/${total} hábitos · complete todos para +${GAMIFICATION_XP.perfectDay} XP</div>`)
     :'';
+  const clearedHtml=maxed?`<div class="habit-game-cleared">🎮 Game zerado · nível máximo</div>`:'';
+  const xpLabel=maxed
+    ?`${xp} XP · nível máximo conquistado`
+    :`${xp} / ${next} XP para o nível ${level+1}`;
   return `<div class="habit-gamification">
     <div class="habit-gam-head">
       <div class="habit-gam-level">
@@ -4592,10 +4740,14 @@ function renderGamificationPanel(){
       </div>
       <div class="habit-xp-total">${xp} XP</div>
     </div>
-    <div class="habit-xp-bar"><div class="habit-xp-fill" style="width:${pct}%"></div></div>
-    <div class="habit-xp-label">${xp} / ${next} XP para o nível ${level+1}</div>
+    <div class="habit-xp-bar"><div class="habit-xp-fill" style="width:${maxed?100:pct}%"></div></div>
+    <div class="habit-xp-label">${xpLabel}</div>
     <div class="habit-badges-row">${badgesHtml}</div>
     ${bonusHtml}
+    ${clearedHtml}
+    <div class="habit-gam-actions">
+      <button type="button" class="btn btn-ghost btn-xs habit-reset-game" onclick="resetGamificationGame()" title="Reiniciar nível, XP e conquistas">↺ Zerar game</button>
+    </div>
   </div>`;
 }
 
@@ -6984,6 +7136,11 @@ function processLocalMessage(text){
 
   if(/conclu|finaliz|feito|complet|marcar/.test(n)&&(n.includes('tarefa')||state.tasks.some(t=>!t.done&&n.includes(normText(t.text).split(' ')[0])))){
     return completeTaskFromChat(text);
+  }
+
+  if(/zer(ar|e)\s+(o\s+)?game|resetar\s+(o\s+)?game|reiniciar\s+(o\s+)?game/.test(n)){
+    resetGamificationGame();
+    return '🎮 **Game zerado!** Nível, XP e conquistas reiniciados. Comece de novo nos hábitos!';
   }
 
   // —— NAVEGAÇÃO ——
