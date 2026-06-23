@@ -76,15 +76,24 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* BG — cyberpunk animado (feixe central + diamantes + partículas) */
+  /* BG — cyberpunk 3D (túnel, parallax e profundidade) */
   body::before { display:none; }
   .ambient-bg {
     position:fixed; inset:0; z-index:-1;
     pointer-events:none; overflow:hidden;
     background:#06040c;
+    perspective:1400px;
+    perspective-origin:50% 50%;
+  }
+  .ambient-3d-scene {
+    position:absolute; inset:0;
+    transform-style:preserve-3d;
+    will-change:transform;
+    transition:transform .12s ease-out;
   }
   .ambient-nebula {
     position:absolute; inset:-25%;
+    transform:translateZ(-520px) scale(1.55);
     background:
       linear-gradient(128deg, rgba(18,6,32,0.95) 0%, transparent 42%),
       linear-gradient(232deg, rgba(28,8,48,0.85) 0%, transparent 38%),
@@ -100,6 +109,7 @@
   }
   .ambient-diagonal {
     position:absolute; inset:-10%;
+    transform:translateZ(-380px) scale(1.25);
     background:repeating-linear-gradient(
       125deg,
       transparent 0px,
@@ -116,8 +126,10 @@
   }
   .ambient-beam-wrap {
     position:absolute; top:50%; left:0; right:0;
-    transform:translateY(-50%); height:140px;
+    transform:translateZ(-60px) translateY(-50%);
+    height:140px;
     pointer-events:none;
+    transform-style:preserve-3d;
   }
   .ambient-beam-glow {
     position:absolute; inset:0;
@@ -159,11 +171,13 @@
   }
   #ambient-canvas {
     position:absolute; inset:0; width:100%; height:100%;
-    opacity:0.92;
+    opacity:0.95;
+    transform:translateZ(40px);
   }
   .ambient-vignette {
     position:absolute; inset:0;
-    background:radial-gradient(ellipse 90% 80% at 50% 50%, transparent 35%, rgba(6,4,12,0.75) 100%);
+    transform:translateZ(120px);
+    background:radial-gradient(ellipse 90% 80% at 50% 50%, transparent 30%, rgba(6,4,12,0.78) 100%);
     pointer-events:none;
   }
   [data-theme="light"] .ambient-bg { background:#f0e8fc; }
@@ -2357,15 +2371,17 @@
 <body class="auth-locked">
 
 <div class="ambient-bg" aria-hidden="true">
-  <div class="ambient-nebula"></div>
-  <div class="ambient-diagonal"></div>
-  <canvas id="ambient-canvas"></canvas>
-  <div class="ambient-beam-wrap">
-    <div class="ambient-beam-glow"></div>
-    <div class="ambient-beam-core"></div>
-    <div class="ambient-beam-flare"></div>
+  <div class="ambient-3d-scene" id="ambient-3d-scene">
+    <div class="ambient-nebula"></div>
+    <div class="ambient-diagonal"></div>
+    <canvas id="ambient-canvas"></canvas>
+    <div class="ambient-beam-wrap">
+      <div class="ambient-beam-glow"></div>
+      <div class="ambient-beam-core"></div>
+      <div class="ambient-beam-flare"></div>
+    </div>
+    <div class="ambient-vignette"></div>
   </div>
-  <div class="ambient-vignette"></div>
 </div>
 
 <!-- AUTH — login / cadastro -->
@@ -3339,7 +3355,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='46-cyber-bg';
+const APP_VERSION='47-bg-3d';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
@@ -3393,33 +3409,36 @@ function load(){
 }
 
 // ============================================================
-// CYBER AMBIENT BACKGROUND
+// CYBER AMBIENT BACKGROUND — 3D tunnel + parallax
 // ============================================================
 let _ambientRaf=0;
 function initCyberAmbient(){
   const canvas=document.getElementById('ambient-canvas');
+  const sceneEl=document.getElementById('ambient-3d-scene');
   if(!canvas) return;
   const ctx=canvas.getContext('2d');
   if(!ctx) return;
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let w=0,h=0,particles=[],diamonds=[],t=0;
+  const FOCAL=720;
+  let w=0,h=0,cx=0,cy=0,t=0;
+  let particles=[],diamonds=[];
+  let rotX=0,rotY=0,targetRX=0,targetRY=0;
+  let pointerX=0.5,pointerY=0.5;
 
   function clusterDiamonds(side){
-    const count=side==='l'?220:220;
-    const xMin=side==='l'?0:w*0.42;
-    const xMax=side==='l'?w*0.42:w;
-    const cy=h*0.5;
+    const count=side==='l'?200:200;
     for(let i=0;i<count;i++){
-      const spread=Math.pow(Math.random(),0.65);
-      const y=cy+(Math.random()-0.5)*h*0.55*spread;
-      const edgeBias=side==='l'?Math.pow(Math.random(),0.4):1-Math.pow(Math.random(),0.4);
-      const x=xMin+(xMax-xMin)*edgeBias*(0.15+Math.random()*0.85);
+      const z=180+Math.random()*2200;
+      const spread=Math.pow(Math.random(),0.55);
+      const y=(Math.random()-0.5)*h*0.7*spread;
+      const depth=1-z/2400;
+      const xOff=280+Math.random()*520;
+      const x=side==='l'?-xOff*(0.4+depth):xOff*(0.4+depth);
       diamonds.push({
-        x,y,
-        size:1.5+Math.random()*5.5,
-        base:0.08+Math.random()*0.55,
+        x,y,z,
+        size:2+Math.random()*7*(0.5+depth),
+        base:0.1+Math.random()*0.5,
         phase:Math.random()*Math.PI*2,
-        drift:0.3+Math.random()*1.2,
         side,
       });
     }
@@ -3427,14 +3446,15 @@ function initCyberAmbient(){
   function buildScene(){
     particles=[];
     diamonds=[];
-    const pCount=Math.min(100,Math.floor(w*h/18000));
+    const pCount=Math.min(140,Math.floor(w*h/14000));
     for(let i=0;i<pCount;i++){
       particles.push({
-        x:Math.random()*w,y:Math.random()*h,
-        r:0.4+Math.random()*1.6,
-        vx:(Math.random()-0.5)*0.22,
-        vy:(Math.random()-0.5)*0.22,
-        a:0.15+Math.random()*0.45,
+        x:(Math.random()-0.5)*w*1.4,
+        y:(Math.random()-0.5)*h*1.1,
+        z:200+Math.random()*2200,
+        speed:1.2+Math.random()*3.5,
+        r:0.5+Math.random()*2,
+        a:0.2+Math.random()*0.5,
       });
     }
     clusterDiamonds('l');
@@ -3444,6 +3464,8 @@ function initCyberAmbient(){
     const dpr=Math.min(window.devicePixelRatio||1,2);
     w=window.innerWidth;
     h=window.innerHeight;
+    cx=w/2;
+    cy=h/2;
     canvas.width=Math.floor(w*dpr);
     canvas.height=Math.floor(h*dpr);
     canvas.style.width=w+'px';
@@ -3451,56 +3473,179 @@ function initCyberAmbient(){
     ctx.setTransform(dpr,0,0,dpr,0,0);
     buildScene();
   }
-  function drawDiamond(x,y,size,alpha){
+  function rotatePoint(x,y,z){
+    const cosY=Math.cos(rotY),sinY=Math.sin(rotY);
+    let rx=x*cosY-z*sinY;
+    let rz=x*sinY+z*cosY;
+    const cosX=Math.cos(rotX),sinX=Math.sin(rotX);
+    let ry=y*cosX-rz*sinX;
+    rz=y*sinX+rz*cosX;
+    return {x:rx,y:ry,z:rz};
+  }
+  function project(x,y,z){
+    const p=rotatePoint(x,y,z);
+    if(p.z<40) return null;
+    const scale=FOCAL/(p.z+FOCAL);
+    return {
+      sx:cx+p.x*scale,
+      sy:cy+p.y*scale,
+      scale,
+      z:p.z,
+    };
+  }
+  function drawDiamondAt(sx,sy,size,alpha){
     ctx.save();
     ctx.globalAlpha=alpha;
     ctx.fillStyle='#d8b4fe';
-    ctx.shadowColor='rgba(168,85,247,0.9)';
-    ctx.shadowBlur=size*2.2;
+    ctx.shadowColor='rgba(168,85,247,0.95)';
+    ctx.shadowBlur=size*2.5;
     ctx.beginPath();
-    ctx.moveTo(x,y-size);
-    ctx.lineTo(x+size*0.65,y);
-    ctx.lineTo(x,y+size);
-    ctx.lineTo(x-size*0.65,y);
+    ctx.moveTo(sx,sy-size);
+    ctx.lineTo(sx+size*0.65,sy);
+    ctx.lineTo(sx,sy+size);
+    ctx.lineTo(sx-size*0.65,sy);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
   }
+  function drawFloorGrid(){
+    const floorY=h*0.22;
+    const cols=18;
+    const rows=22;
+    const spacing=110;
+    ctx.lineWidth=1;
+    for(let i=-cols;i<=cols;i++){
+      const x=i*spacing;
+      const p1=project(x,floorY,2400);
+      const p2=project(x,floorY,120);
+      if(!p1||!p2) continue;
+      const fade=0.08+0.14*(1-Math.abs(i)/cols);
+      ctx.strokeStyle=`rgba(124,58,237,${fade})`;
+      ctx.beginPath();
+      ctx.moveTo(p1.sx,p1.sy);
+      ctx.lineTo(p2.sx,p2.sy);
+      ctx.stroke();
+    }
+    for(let z=120;z<=2400;z+=spacing){
+      const p1=project(-cols*spacing,floorY,z);
+      const p2=project(cols*spacing,floorY,z);
+      if(!p1||!p2) continue;
+      const fade=0.06+0.12*(z/2400);
+      ctx.strokeStyle=`rgba(168,85,247,${fade})`;
+      ctx.beginPath();
+      ctx.moveTo(p1.sx,p1.sy);
+      ctx.lineTo(p2.sx,p2.sy);
+      ctx.stroke();
+    }
+  }
+  function drawBeamTunnel(){
+    const rings=8;
+    for(let i=0;i<rings;i++){
+      const z=200+i*280;
+      const p=project(0,0,z);
+      if(!p) continue;
+      const r=Math.min(w,h)*0.55*p.scale;
+      const alpha=0.04+0.06*(1-i/rings);
+      ctx.strokeStyle=`rgba(192,132,252,${alpha})`;
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.ellipse(cx,cy,r*1.8,r*0.35,0,0,Math.PI*2);
+      ctx.stroke();
+    }
+  }
   function drawStatic(){
     ctx.clearRect(0,0,w,h);
-    particles.forEach(p=>{
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle=`rgba(216,180,254,${p.a})`;
-      ctx.fill();
+    drawFloorGrid();
+    drawBeamTunnel();
+    const drawables=[];
+    diamonds.forEach(d=>{
+      const pr=project(d.x,d.y,d.z);
+      if(pr) drawables.push({type:'d',pr,d});
     });
-    diamonds.forEach(d=>drawDiamond(d.x,d.y,d.size,d.base));
+    particles.forEach(p=>{
+      const pr=project(p.x,p.y,p.z);
+      if(pr) drawables.push({type:'p',pr,p});
+    });
+    drawables.sort((a,b)=>b.pr.z-a.pr.z);
+    drawables.forEach(item=>{
+      if(item.type==='d'){
+        drawDiamondAt(item.pr.sx,item.pr.sy,item.d.size*item.pr.scale,item.d.base);
+      }else{
+        const p=item.p;
+        ctx.beginPath();
+        ctx.arc(item.pr.sx,item.pr.sy,p.r*item.pr.scale,0,Math.PI*2);
+        ctx.fillStyle=`rgba(216,180,254,${p.a})`;
+        ctx.fill();
+      }
+    });
   }
   function frame(){
-    t+=0.014;
+    t+=0.012;
+    rotY=0.12*Math.sin(t*0.28)+targetRY;
+    rotX=0.07*Math.sin(t*0.21+0.5)+targetRX;
+    if(sceneEl&&!reduced){
+      sceneEl.style.transform=`rotateX(${-rotX*14}deg) rotateY(${rotY*18}deg)`;
+    }
     ctx.clearRect(0,0,w,h);
-    particles.forEach(p=>{
-      if(!reduced){
-        p.x+=p.vx;p.y+=p.vy;
-        if(p.x<0)p.x=w;if(p.x>w)p.x=0;
-        if(p.y<0)p.y=h;if(p.y>h)p.y=0;
-      }
-      const twinkle=0.7+0.3*Math.sin(t*1.8+p.x*0.01);
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle=`rgba(230,210,255,${p.a*twinkle})`;
-      ctx.fill();
-    });
+    drawFloorGrid();
+    drawBeamTunnel();
+    if(!reduced){
+      particles.forEach(p=>{
+        p.z-=p.speed;
+        if(p.z<80){
+          p.z=2200+Math.random()*400;
+          p.x=(Math.random()-0.5)*w*1.4;
+          p.y=(Math.random()-0.5)*h*1.1;
+        }
+      });
+    }
+    const drawables=[];
     diamonds.forEach(d=>{
-      const flicker=0.45+0.55*Math.sin(t*2.4+d.phase);
-      const drift=reduced?0:Math.sin(t*0.55+d.phase)*d.drift;
-      const fade=1-Math.min(1,Math.abs(d.y-h*0.5)/(h*0.42));
-      drawDiamond(d.x+drift,d.y,d.size,d.base*flicker*fade);
+      const flicker=0.45+0.55*Math.sin(t*2.2+d.phase);
+      const wobble=reduced?0:Math.sin(t*0.5+d.phase)*2;
+      const pr=project(d.x+wobble,d.y,d.z);
+      if(pr){
+        const centerFade=1-Math.min(1,Math.abs(pr.sx-cx)/(w*0.28));
+        drawables.push({
+          type:'d',pr,
+          size:d.size*pr.scale,
+          alpha:d.base*flicker*centerFade,
+        });
+      }
+    });
+    particles.forEach(p=>{
+      const twinkle=0.65+0.35*Math.sin(t*1.6+p.z*0.004);
+      const pr=project(p.x,p.y,p.z);
+      if(pr) drawables.push({type:'p',pr,p,twinkle});
+    });
+    drawables.sort((a,b)=>b.pr.z-a.pr.z);
+    drawables.forEach(item=>{
+      if(item.type==='d'){
+        drawDiamondAt(item.pr.sx,item.pr.sy,item.size,item.alpha);
+      }else{
+        const p=item.p;
+        ctx.beginPath();
+        ctx.arc(item.pr.sx,item.pr.sy,Math.max(0.4,p.r*item.pr.scale),0,Math.PI*2);
+        ctx.fillStyle=`rgba(230,210,255,${p.a*item.twinkle})`;
+        ctx.fill();
+      }
     });
     _ambientRaf=requestAnimationFrame(frame);
   }
+  function onPointer(e){
+    const px=e.clientX/w;
+    const py=e.clientY/h;
+    pointerX+=(px-pointerX)*0.08;
+    pointerY+=(py-pointerY)*0.08;
+    targetRY=(pointerX-0.5)*0.42;
+    targetRX=(pointerY-0.5)*0.28;
+  }
   resize();
   window.addEventListener('resize',resize);
+  window.addEventListener('mousemove',onPointer,{passive:true});
+  window.addEventListener('touchmove',e=>{
+    if(e.touches[0]) onPointer(e.touches[0]);
+  },{passive:true});
   if(reduced){drawStatic();return;}
   cancelAnimationFrame(_ambientRaf);
   _ambientRaf=requestAnimationFrame(frame);
