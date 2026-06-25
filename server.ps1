@@ -7,6 +7,11 @@ $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$Port/")
 $listener.Start()
 
+if ($env:IDESPECTOR_OPEN_BROWSER -eq '1') {
+    Start-Sleep -Milliseconds 400
+    Start-Process "http://localhost:$Port/idespector.html"
+}
+
 Write-Host "IDespector rodando em http://localhost:$Port/idespector.html"
 Write-Host "WhatsApp API: POST http://localhost:$Port/api/whatsapp"
 Write-Host "Telegram API: POST http://localhost:$Port/api/telegram/send"
