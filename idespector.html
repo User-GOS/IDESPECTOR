@@ -220,6 +220,30 @@
   .dashboard-bento #agenda-card { min-height:0; }
   #row-kanban-main #kanban-card { min-height:320px; }
   #row-kanban-main .card-body-scroll { max-height:420px; }
+  #verse-card {
+    min-height:auto !important;
+    background:linear-gradient(135deg, rgba(37,99,235,0.07) 0%, rgba(139,92,246,0.05) 100%);
+    border-color:rgba(99,102,241,0.22);
+  }
+  .verse-card-body { padding:18px 22px 16px; }
+  .verse-card-head {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-bottom:10px; flex-wrap:wrap;
+  }
+  .verse-card-title {
+    font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.7px;
+    color:var(--accent-2); display:flex; align-items:center; gap:6px;
+  }
+  .verse-date { font-size:11px; color:var(--text-muted); font-weight:600; text-transform:capitalize; }
+  .verse-text {
+    margin:0; font-size:15px; line-height:1.65; color:var(--text-primary);
+    font-style:italic; font-weight:500;
+  }
+  .verse-foot {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-top:12px; flex-wrap:wrap;
+  }
+  .verse-ref { font-size:12px; font-weight:700; color:var(--accent); font-style:normal; }
   #row-agenda-habits #agenda-card { min-height:340px; }
   #row-agenda-habits #habits-card { min-height:340px; }
   .card-body-scroll {
@@ -2650,6 +2674,23 @@
     </div>
   </div>
 
+  <!-- VERSÍCULO DO DIA -->
+  <div class="dashboard-bento" id="row-daily-verse">
+    <div class="card" id="verse-card">
+      <div class="verse-card-body">
+        <div class="verse-card-head">
+          <div class="verse-card-title"><span aria-hidden="true">📖</span> Versículo do dia</div>
+          <span class="verse-date" id="verse-date">—</span>
+        </div>
+        <blockquote class="verse-text" id="verse-text">Carregando...</blockquote>
+        <div class="verse-foot">
+          <cite class="verse-ref" id="verse-ref">—</cite>
+          <button type="button" class="btn btn-soft btn-sm" onclick="copyDailyVerse()">📋 Copiar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ROW: Kanban principal -->
   <div class="dashboard-bento" id="row-kanban-main">
     <div class="card" id="kanban-card">
@@ -2930,6 +2971,115 @@ function localDateStr(d=new Date()){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function todayStr(){return localDateStr();}
+function getDayOfYear(d=new Date()){
+  const start=new Date(d.getFullYear(),0,0);
+  return Math.floor((d-start)/(86400000));
+}
+const DAILY_BIBLE_VERSES=[
+  {text:'Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.',ref:'João 3:16'},
+  {text:'Entregue o seu caminho ao Senhor; confie nele, e ele agirá.',ref:'Salmos 37:5'},
+  {text:'Tudo posso naquele que me fortalece.',ref:'Filipenses 4:13'},
+  {text:'O Senhor é o meu pastor; nada me faltará.',ref:'Salmos 23:1'},
+  {text:'Confie no Senhor de todo o seu coração e não se apoie em seu próprio entendimento.',ref:'Provérbios 3:5'},
+  {text:'Não temas, porque eu sou contigo; não te assombres, porque eu sou teu Deus; eu te fortaleço, e te ajudo, e te sustento com a destra da minha justiça.',ref:'Isaías 41:10'},
+  {text:'Buscai primeiro o reino de Deus, e a sua justiça, e todas estas coisas vos serão acrescentadas.',ref:'Mateus 6:33'},
+  {text:'Lança sobre o Senhor o teu cuidado, e ele te susterá; nunca permitirá que o justo seja abalado.',ref:'Salmos 55:22'},
+  {text:'Porque eu bem sei os planos que tenho para vós, diz o Senhor; planos de paz, e não de mal, para vos dar o fim que esperais.',ref:'Jeremias 29:11'},
+  {text:'Vinde a mim, todos os que estais cansados e sobrecarregados, e eu vos aliviarei.',ref:'Mateus 11:28'},
+  {text:'O amor é paciente, o amor é bondoso. Não inveja, não se vangloria, não se orgulha.',ref:'1 Coríntios 13:4'},
+  {text:'Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia.',ref:'Salmos 46:1'},
+  {text:'Se Deus é por nós, quem será contra nós?',ref:'Romanos 8:31'},
+  {text:'Aquietai-vos e sabei que eu sou Deus.',ref:'Salmos 46:10'},
+  {text:'E sabemos que todas as coisas cooperam para o bem daqueles que amam a Deus.',ref:'Romanos 8:28'},
+  {text:'O Senhor te abençoe e te guarde; o Senhor faça resplandecer o rosto sobre ti e tenha misericórdia de ti.',ref:'Números 6:24-25'},
+  {text:'Porque pela graça sois salvos, por meio da fé; e isto não vem de vós, é dom de Deus.',ref:'Efésios 2:8'},
+  {text:'O choro pode durar uma noite, mas a alegria vem pela manhã.',ref:'Salmos 30:5'},
+  {text:'Não se turbe o vosso coração; credes em Deus, crede também em mim.',ref:'João 14:1'},
+  {text:'Mas os que esperam no Senhor renovarão as suas forças; subirão com asas como águias.',ref:'Isaías 40:31'},
+  {text:'Porque onde estiver o teu tesouro, aí estará também o teu coração.',ref:'Mateus 6:21'},
+  {text:'Sede fortes e corajosos. Não temais, nem vos atemorizeis, porque o Senhor, vosso Deus, é contigo.',ref:'Josué 1:9'},
+  {text:'Ora, a fé é a certeza daquilo que esperamos e a prova das coisas que não vemos.',ref:'Hebreus 11:1'},
+  {text:'Em tudo dai graças, porque esta é a vontade de Deus em Cristo Jesus para convosco.',ref:'1 Tessalonicenses 5:18'},
+  {text:'Porque somos feitura sua, criados em Cristo Jesus para boas obras.',ref:'Efésios 2:10'},
+  {text:'O Senhor está perto de todos os que o invocam, de todos os que o invocam em verdade.',ref:'Salmos 145:18'},
+  {text:'Não vos conformeis com este mundo, mas transformai-vos pela renovação da vossa mente.',ref:'Romanos 12:2'},
+  {text:'Porque a palavra de Deus é viva e eficaz, e mais cortante do que qualquer espada de dois gumes.',ref:'Hebreus 4:12'},
+  {text:'Deleita-te também no Senhor, e ele te concederá os desejos do teu coração.',ref:'Salmos 37:4'},
+  {text:'Porque ninguém pode pôr outro fundamento, além do que já está posto, que é Jesus Cristo.',ref:'1 Coríntios 3:11'},
+  {text:'Eis que estou à porta e bato; se alguém ouvir a minha voz e abrir a porta, entrarei.',ref:'Apocalipse 3:20'},
+  {text:'Porque Deus não nos deu espírito de covardia, mas de poder, de amor e de moderação.',ref:'2 Timóteo 1:7'},
+  {text:'O Senhor é a minha luz e a minha salvação; a quem temerei?',ref:'Salmos 27:1'},
+  {text:'Porque todos pecaram e destituídos estão da glória de Deus.',ref:'Romanos 3:23'},
+  {text:'Mas Deus prova o seu amor para conosco, pois Cristo morreu por nós quando ainda éramos pecadores.',ref:'Romanos 5:8'},
+  {text:'Porque, se confessares com a tua boca que Jesus é Senhor, e creres no teu coração que Deus o ressuscitou, serás salvo.',ref:'Romanos 10:9'},
+  {text:'Porque a paga do pecado é a morte, mas o dom gratuito de Deus é a vida eterna, por Cristo Jesus.',ref:'Romanos 6:23'},
+  {text:'Portanto, ide e fazei discípulos de todas as nações, batizando-os em nome do Pai, do Filho e do Espírito Santo.',ref:'Mateus 28:19'},
+  {text:'Porque a graça de Deus se manifestou salvadora a todos os homens.',ref:'Tito 2:11'},
+  {text:'O fruto do Espírito, porém, é amor, alegria, paz, longanimidade, benignidade, bondade, fidelidade.',ref:'Gálatas 5:22'},
+  {text:'Porque nada trouxemos para o mundo, e manifestamente nada podemos levar dele.',ref:'1 Timóteo 6:7'},
+  {text:'Lâmpada para os meus pés é a tua palavra, e luz para o meu caminho.',ref:'Salmos 119:105'},
+  {text:'Porque melhor é um dia nos teus átrios do que mil noutro lugar.',ref:'Salmos 84:10'},
+  {text:'O Senhor firma os passos do homem bom, e nele se compraz o seu caminho.',ref:'Salmos 37:23'},
+  {text:'Porque o Senhor corrige a quem ama, e açoita a todo filho a quem recebe.',ref:'Hebreus 12:6'},
+  {text:'Não deixemos de congregar-nos, como é costume de alguns; antes, exortemo-nos mutuamente.',ref:'Hebreus 10:25'},
+  {text:'Porque nós somos feitura dele, criados em Cristo Jesus para boas obras, as quais Deus preparou.',ref:'Efésios 2:10'},
+  {text:'O Senhor é bom, um refúgio em tempos de angústia, e conhece os que nele confiam.',ref:'Naum 1:7'},
+  {text:'Porque todo aquele que invocar o nome do Senhor será salvo.',ref:'Romanos 10:13'},
+  {text:'Deus é Espírito, e importa que os seus adoradores o adorem em espírito e em verdade.',ref:'João 4:24'},
+  {text:'Porque onde dois ou três estiverem reunidos em meu nome, aí estou eu no meio deles.',ref:'Mateus 18:20'},
+  {text:'O Senhor pelejará por vós, e vós vos calareis.',ref:'Êxodo 14:14'},
+  {text:'Porque a misericórdia do Senhor é de eternidade a eternidade sobre os que o temem.',ref:'Salmos 103:17'},
+  {text:'Porque a vida de todo o corpo está no coração; por isso, guarda o teu coração, porque dele procedem as saídas da vida.',ref:'Provérbios 4:23'},
+  {text:'O Senhor é compassivo e misericordioso, longânimo e abundante em amor.',ref:'Salmos 103:8'},
+  {text:'Porque ninguém tem maior amor do que este: de dar alguém a vida pelos seus amigos.',ref:'João 15:13'},
+  {text:'Espera no Senhor, tem bom ânimo, e ele fortalecerá o teu coração; espera, pois, no Senhor.',ref:'Salmos 27:14'},
+  {text:'Tu conservarás em paz aquele cuja mente está firme em ti, porque confia em ti.',ref:'Isaías 26:3'},
+  {text:'Clama a mim, e responder-te-ei, e anunciar-te-ei coisas grandes e ocultas, que não sabes.',ref:'Jeremias 33:3'},
+  {text:'Buscai ao Senhor enquanto se pode achar, invocai-o enquanto está perto.',ref:'Isaías 55:6'},
+  {text:'Porque o Senhor é o teu guarda; o sol não te molestará de dia, nem a lua de noite.',ref:'Salmos 121:6'},
+  {text:'Deus é amor; e quem permanece no amor permanece em Deus, e Deus nele.',ref:'1 João 4:16'},
+  {text:'Porque todo o que é nascido de Deus vence o mundo; e esta é a vitória que vence o mundo: a nossa fé.',ref:'1 João 5:4'},
+];
+function getDailyVerse(dateStr=todayStr()){
+  const p=dateStr.split('-').map(Number);
+  const d=new Date(p[0],p[1]-1,p[2]);
+  const idx=getDayOfYear(d)%DAILY_BIBLE_VERSES.length;
+  return DAILY_BIBLE_VERSES[idx];
+}
+function formatVerseDateLabel(dateStr=todayStr()){
+  const p=dateStr.split('-').map(Number);
+  const label=new Date(p[0],p[1]-1,p[2]).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  return label.charAt(0).toUpperCase()+label.slice(1);
+}
+let lastRenderedVerseDate=null;
+function renderDailyVerse(){
+  const verse=getDailyVerse();
+  const textEl=document.getElementById('verse-text');
+  const refEl=document.getElementById('verse-ref');
+  const dateEl=document.getElementById('verse-date');
+  if(textEl) textEl.textContent=`"${verse.text}"`;
+  if(refEl) refEl.textContent=verse.ref;
+  if(dateEl) dateEl.textContent=formatVerseDateLabel();
+  lastRenderedVerseDate=todayStr();
+}
+function copyDailyVerse(){
+  const verse=getDailyVerse();
+  const text=`"${verse.text}" — ${verse.ref}`;
+  const done=()=>showToast('📋','Copiado','Versículo do dia na área de transferência.');
+  if(navigator.clipboard?.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>showToast('📋','Copiar',text));
+  }else showToast('📋','Versículo',text);
+}
+function showDailyVerseWelcome(){
+  const today=todayStr();
+  if(state.dailyVerseShownDate===today) return;
+  state.dailyVerseShownDate=today;
+  save();
+  const v=getDailyVerse();
+  setTimeout(()=>{
+    showToast('📖','Versículo do dia',`"${v.text}" — ${v.ref}`);
+  },3500);
+}
 function eventDate(e){return e.date||todayStr();}
 function eventsOnDate(dateStr){return state.events.filter(e=>eventDate(e)===dateStr);}
 function migrateEvents(){
@@ -3704,6 +3854,7 @@ function animateDashboardBlocks(){
   const selectors=[
     '#quick-strip .quick-strip-btn',
     '#metrics-grid .metric-card',
+    '#row-daily-verse .card',
     '#row-kanban-main .card',
     '#row-agenda-habits .card',
     '#row-tasks-reminders .card',
@@ -3756,6 +3907,7 @@ function updateClock(){
   const name=state.userName?`, <span>${state.userName}</span>`:'';
   document.getElementById('greeting-main').innerHTML=`<span>${gr}${name}</span>`;
   document.getElementById('greeting-tag').textContent=new Date().toLocaleString('pt-BR',{weekday:'long'}).replace(/^\w/,c=>c.toUpperCase());
+  if(lastRenderedVerseDate!==todayStr()) renderDailyVerse();
   checkAlarms(now);
   checkInactivityPeriod();
   checkWorkSessionBreak();
@@ -5107,6 +5259,7 @@ function saveGoal(){
 function renderAll(){
   renderTasks(); renderReminders(); renderAlarms(); renderAgenda(); renderNotes();
   renderHabits(); renderGoals(); renderKanban(); renderTranslator();
+  renderDailyVerse();
   updateMetrics();
 }
 
@@ -7491,6 +7644,7 @@ window.clearPickerDate=clearPickerDate;
 const VIEW_SECTIONS = {
   'quick-strip': ['dashboard'],
   'metrics-grid': ['dashboard'],
+  'verse-card': ['dashboard'],
   'kanban-card': ['dashboard', 'productivity', 'tasks'],
   'habits-card': ['dashboard', 'productivity'],
   'goals-card': ['dashboard', 'productivity'],
@@ -7501,7 +7655,7 @@ const VIEW_SECTIONS = {
   'notes-card': ['dashboard', 'notes'],
   'translator-card': ['translator'],
 };
-const VIEW_ROWS = ['row-kanban-main', 'row-agenda-habits', 'row-tasks-reminders', 'row-goals-notes', 'row-alarms', 'row-translator'];
+const VIEW_ROWS = ['row-daily-verse', 'row-kanban-main', 'row-agenda-habits', 'row-tasks-reminders', 'row-goals-notes', 'row-alarms', 'row-translator'];
 const VIEW_META = {
   dashboard: { title:'Dashboard', sub:'Visão geral do seu dia' },
   tasks: { title:'Tarefas', sub:'Lista e Kanban das suas tarefas' },
@@ -7650,6 +7804,7 @@ function bootstrapApp(){
   recordWorkActivity();
   setTimeout(()=>showToast('🚀','IDespector ativo','Sistema inicializado com sucesso!'),800);
   setTimeout(()=>showToast('📋','Resumo do dia',`${state.tasks.filter(t=>!t.done).length} tarefas pendentes, ${eventsOnDate(todayStr()).length} eventos hoje.`),2000);
+  showDailyVerseWelcome();
 }
 
 initTranslator();
