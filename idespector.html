@@ -2937,6 +2937,12 @@
     font-size:10px; color:var(--text-muted);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
+  .sidebar-user-role {
+    display:inline-block; margin-top:3px; padding:1px 6px; border-radius:999px;
+    font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    background:rgba(37,99,235,0.15); color:var(--accent); border:1px solid rgba(37,99,235,0.25);
+  }
+  body.user-admin .sidebar-user { border-color:rgba(37,99,235,0.35); }
 
 </style>
 </head>
@@ -3046,6 +3052,7 @@
     <div class="sidebar-user-info">
       <div class="sidebar-user-name" id="sidebar-user-name">Usuário</div>
       <div class="sidebar-user-email" id="sidebar-user-email">—</div>
+      <span class="sidebar-user-role hidden" id="sidebar-user-role">Admin</span>
     </div>
   </div>
   <div class="nav-section">Ferramentas</div>
@@ -4382,6 +4389,7 @@ async function fetchAiReply(userText){
   const payload={
     messages:(state.chat||[]).map(m=>({role:m.role,content:m.content})),
     context:buildAiPanelContext(),
+    isAdmin:isAdminUser(),
   };
   const key=(state.ai?.apiKey||'').trim();
   if(key) payload.apiKey=key;
@@ -4664,8 +4672,18 @@ const AUTH_REGISTRY_KEY='idespector_users';
 const AUTH_SESSION_KEY='idespector_session';
 const AUTH_DATA_PREFIX='idespector_data_';
 const BUILTIN_ACCOUNTS=[
-  {id:'u_builtin_giovane',email:'giovane.ti@ficequity.com',name:'Giovane',passKey:'giovane'},
+  {id:'u_builtin_giovane',email:'giovane.ti@ficequity.com',name:'Giovane',passKey:'giovane',admin:true},
 ];
+function isAdminEmail(email){
+  const e=normalizeEmail(email);
+  return BUILTIN_ACCOUNTS.some(a=>a.admin&&normalizeEmail(a.email)===e);
+}
+function isAdminUser(userOrNull){
+  const u=userOrNull||currentAuthUser;
+  if(!u) return false;
+  if(u.role==='admin') return true;
+  return isAdminEmail(u.email);
+}
 function builtinPass(key){
   if(key==='giovane') return String.fromCharCode(78,105,99,111,108,108,101,64,49,50,51);
   return '';
@@ -4708,7 +4726,9 @@ function getSession(){
 function setSession(user,remember){
   if(!remember){localStorage.removeItem(AUTH_SESSION_KEY);return;}
   localStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({
-    userId:user.id, email:user.email, name:user.name, loggedInAt:Date.now(),
+    userId:user.id, email:user.email, name:user.name,
+    role:isAdminUser(user)?'admin':'user',
+    loggedInAt:Date.now(),
   }));
 }
 function clearSession(){localStorage.removeItem(AUTH_SESSION_KEY);}
@@ -4768,8 +4788,13 @@ async function ensureBuiltinUsers(){
       user.salt=salt;
       user.builtin=true;
       user.name=acc.name;
+      if(acc.admin) user.role='admin';
     }else{
-      user={id:acc.id,email,name:acc.name,salt,passwordHash:hash,createdAt:Date.now(),builtin:true};
+      user={
+        id:acc.id,email,name:acc.name,salt,passwordHash:hash,
+        createdAt:Date.now(),builtin:true,
+        role:acc.admin?'admin':'user',
+      };
       registry.users.push(user);
       migrateLegacyDataIfNeeded(user.id);
       if(!localStorage.getItem(userDataKey(user.id))){
@@ -4824,16 +4849,35 @@ function updateAuthUserUI(){
   if(!currentAuthUser) return;
   const name=currentAuthUser.name||'Usuário';
   const email=currentAuthUser.email||'';
+  const admin=isAdminUser();
   const av=document.getElementById('sidebar-user-avatar');
   const nm=document.getElementById('sidebar-user-name');
   const em=document.getElementById('sidebar-user-email');
+  const roleEl=document.getElementById('sidebar-user-role');
   if(av) av.textContent=userInitials(name);
   if(nm) nm.textContent=name;
   if(em) em.textContent=email;
+  if(roleEl){
+    roleEl.classList.toggle('hidden',!admin);
+    roleEl.textContent='Admin';
+  }
+  document.body.classList.toggle('user-admin',admin);
   state.userName=name;
 }
 async function enterApp(user,remember){
-  currentAuthUser={id:user.id,email:user.email,name:user.name};
+  if(isAdminEmail(user.email)){
+    user.role='admin';
+    const registry=getUsersRegistry();
+    const regUser=registry.users.find(u=>u.id===user.id);
+    if(regUser){
+      regUser.role='admin';
+      saveUsersRegistry(registry);
+    }
+  }
+  currentAuthUser={
+    id:user.id,email:user.email,name:user.name,
+    role:isAdminUser(user)?'admin':'user',
+  };
   setSession(user,remember!==false);
   document.body.classList.remove('auth-locked');
   document.body.classList.add('authenticated');
@@ -4845,10 +4889,12 @@ async function enterApp(user,remember){
 }
 function showAuthScreen(){
   document.body.classList.add('auth-locked');
-  document.body.classList.remove('authenticated');
+  document.body.classList.remove('authenticated','user-admin');
   document.getElementById('auth-screen')?.classList.remove('hidden');
   currentAuthUser=null;
   appBootstrapped=false;
+  const loginEmail=document.getElementById('login-email');
+  if(loginEmail&&!loginEmail.value) loginEmail.value='giovane.ti@ficequity.com';
 }
 async function submitLogin(e){
   e.preventDefault();
