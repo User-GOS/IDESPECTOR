@@ -499,7 +499,6 @@
     z-index:125; display:flex; flex-direction:column; align-items:flex-end; gap:0;
     pointer-events:none;
   }
-  body.auth-locked .ai-chat { display:none; }
   body.authenticated .ai-chat { pointer-events:none; }
   .ai-chat-backdrop {
     position:fixed; inset:0; z-index:-1;
@@ -2288,8 +2287,6 @@
   .mobile-nav-item svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
   .mobile-nav-item.active { color:var(--accent); background:var(--accent-dim); }
   .mobile-nav-item:active { transform:scale(0.96); }
-  body.auth-locked .mobile-bottom-nav,
-  body.auth-locked .sidebar-backdrop { display:none !important; }
   @media (min-width:769px) {
     .sidebar-backdrop { display:none !important; }
   }
@@ -2374,9 +2371,6 @@
       right:12px; left:12px;
     }
     .toast { min-width:0; width:100%; }
-    .auth-screen { padding:16px; padding-top:calc(16px + var(--safe-top)); padding-bottom:calc(16px + var(--safe-bottom)); }
-    .auth-card { padding:28px 22px 24px; }
-    .auth-brand .logo-mark { width:48px; height:48px; }
     .form-input, .form-select, .form-textarea { font-size:16px; }
     .btn { min-height:44px; }
     .btn-sm { min-height:38px; }
@@ -2839,83 +2833,6 @@
   .view-focused .translator-editor { min-height:280px; }
   @media (max-width:900px){ .translator-grid { grid-template-columns:1fr; } }
 
-  /* AUTH — login multiusuário */
-  body.auth-locked .sidebar,
-  body.auth-locked .main,
-  body.auth-locked .modal-overlay,
-  body.auth-locked .toast-container,
-  body.auth-locked .alarm-overlay,
-  body.auth-locked .focus-overlay { display:none !important; }
-  .auth-screen {
-    position:fixed; inset:0; z-index:999999;
-    display:flex; align-items:center; justify-content:center;
-    padding:24px; overflow:auto;
-    background:rgba(11, 15, 23, 0.72);
-    backdrop-filter:blur(12px);
-  }
-  .auth-screen.hidden { display:none; }
-  .auth-card {
-    width:min(400px, 100%); padding:36px 32px 32px;
-    background:var(--bg-card);
-    border:1px solid var(--border);
-    border-radius:var(--radius-lg);
-    box-shadow:var(--shadow-hover);
-    animation:viewFadeIn .35s var(--ease-out);
-  }
-  .auth-brand {
-    display:flex; flex-direction:column; align-items:center;
-    text-align:center; margin-bottom:28px; gap:12px;
-  }
-  .auth-brand .logo-mark {
-    width:52px; height:52px; border-radius:12px;
-  }
-  .auth-brand h1 { margin:0; }
-  .auth-brand p { font-size:13px; color:var(--text-muted); line-height:1.5; max-width:300px; }
-  .auth-tabs {
-    display:flex; gap:6px; padding:4px; margin-bottom:22px;
-    background:var(--bg-glass); border:1px solid var(--border);
-    border-radius:var(--radius-md);
-  }
-  .auth-tab {
-    flex:1; padding:10px 12px; border:none; border-radius:8px;
-    background:transparent; color:var(--text-muted);
-    font-family:inherit; font-size:13px; font-weight:600;
-    cursor:pointer; transition:all .2s var(--ease-out);
-  }
-  .auth-tab.active {
-    background:var(--bg-card);
-    color:var(--text-primary);
-    box-shadow:var(--shadow-card);
-    border:1px solid var(--border);
-  }
-  .auth-form { display:flex; flex-direction:column; gap:14px; }
-  .auth-form.hidden { display:none; }
-  .auth-field label {
-    display:block; font-size:12px; font-weight:600;
-    color:var(--text-secondary); margin-bottom:6px;
-  }
-  .auth-error {
-    display:none; padding:10px 12px; border-radius:10px;
-    background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.25);
-    color:var(--danger); font-size:12px; line-height:1.45;
-  }
-  .auth-error.visible { display:block; }
-  .auth-success {
-    display:none; padding:10px 12px; border-radius:10px;
-    background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.25);
-    color:var(--success); font-size:12px; line-height:1.45;
-  }
-  .auth-success.visible { display:block; }
-  .auth-remember {
-    display:flex; align-items:center; gap:8px;
-    font-size:12px; color:var(--text-muted); cursor:pointer;
-  }
-  .auth-remember input { accent-color:var(--accent); width:16px; height:16px; }
-  .auth-submit { width:100%; justify-content:center; margin-top:4px; padding:12px !important; }
-  .auth-foot {
-    margin-top:20px; padding-top:16px; border-top:1px solid var(--border);
-    font-size:11px; color:var(--text-muted); text-align:center; line-height:1.5;
-  }
   .sidebar-user {
     display:flex; align-items:center; gap:10px;
     padding:10px; margin:4px 0 8px;
@@ -2940,7 +2857,7 @@
 
 </style>
 </head>
-<body class="auth-locked">
+<body class="authenticated">
 
 <div class="ambient-bg" aria-hidden="true">
   <div class="ambient-3d-scene" id="ambient-3d-scene">
@@ -2953,58 +2870,6 @@
       <div class="ambient-beam-flare"></div>
     </div>
     <div class="ambient-vignette"></div>
-  </div>
-</div>
-
-<!-- AUTH — login / cadastro -->
-<div class="auth-screen" id="auth-screen" role="dialog" aria-modal="true" aria-label="Acesso ao IDespector">
-  <div class="auth-card">
-    <div class="auth-brand">
-      <span class="logo-mark"><img src="assets/idespector-icon.png" alt=""></span>
-      <h1 class="brand-wordmark"><span class="logo-ide">ide</span><span class="logo-spector">spector</span></h1>
-      <p>Gerencie tarefas, agenda e lembretes em um só lugar.</p>
-    </div>
-    <div class="auth-tabs">
-      <button type="button" class="auth-tab active" data-auth-tab="login" onclick="switchAuthTab('login')">Entrar</button>
-      <button type="button" class="auth-tab" data-auth-tab="register" onclick="switchAuthTab('register')">Criar conta</button>
-    </div>
-    <div class="auth-error" id="auth-error" role="alert"></div>
-    <div class="auth-success" id="auth-success" role="status"></div>
-    <form class="auth-form" id="auth-form-login" onsubmit="submitLogin(event)">
-      <div class="auth-field">
-        <label for="login-email">E-mail</label>
-        <input class="input-field" type="email" id="login-email" name="email" placeholder="voce@empresa.com" autocomplete="email" required>
-      </div>
-      <div class="auth-field">
-        <label for="login-password">Senha</label>
-        <input class="input-field" type="password" id="login-password" name="password" placeholder="Sua senha" autocomplete="current-password" required minlength="6">
-      </div>
-      <label class="auth-remember">
-        <input type="checkbox" id="login-remember" checked>
-        Manter conectado neste dispositivo
-      </label>
-      <button type="submit" class="btn btn-primary auth-submit" id="login-submit-btn">Entrar</button>
-    </form>
-    <form class="auth-form hidden" id="auth-form-register" onsubmit="submitRegister(event)">
-      <div class="auth-field">
-        <label for="register-name">Nome</label>
-        <input class="input-field" type="text" id="register-name" name="name" placeholder="Como podemos te chamar?" autocomplete="name" required minlength="2">
-      </div>
-      <div class="auth-field">
-        <label for="register-email">E-mail</label>
-        <input class="input-field" type="email" id="register-email" name="email" placeholder="voce@empresa.com" autocomplete="email" required>
-      </div>
-      <div class="auth-field">
-        <label for="register-password">Senha</label>
-        <input class="input-field" type="password" id="register-password" name="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6">
-      </div>
-      <div class="auth-field">
-        <label for="register-password2">Confirmar senha</label>
-        <input class="input-field" type="password" id="register-password2" name="password2" placeholder="Repita a senha" autocomplete="new-password" required minlength="6">
-      </div>
-      <button type="submit" class="btn btn-primary auth-submit" id="register-submit-btn">Criar minha conta</button>
-    </form>
-    <p class="auth-foot">Seus dados ficam salvos neste dispositivo. Use uma senha forte com pelo menos 6 caracteres.</p>
   </div>
 </div>
 
@@ -3052,9 +2917,6 @@
   <div class="sidebar-bottom">
     <div class="nav-item" onclick="toggleFocus()" title="Modo Foco">
       <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span><span class="nav-label">Modo Foco</span>
-    </div>
-    <div class="nav-item" onclick="logoutUser()" title="Sair da conta">
-      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span><span class="nav-label">Sair</span>
     </div>
   </div>
 </nav>
@@ -4382,7 +4244,6 @@ async function fetchAiReply(userText){
   const payload={
     messages:(state.chat||[]).map(m=>({role:m.role,content:m.content})),
     context:buildAiPanelContext(),
-    isAdmin:isAdminUser(),
   };
   const key=(state.ai?.apiKey||'').trim();
   if(key) payload.apiKey=key;
@@ -4713,29 +4574,12 @@ function setSession(user,remember){
   }));
 }
 function clearSession(){localStorage.removeItem(AUTH_SESSION_KEY);}
-function showAuthMessage(type,msg){
-  const err=document.getElementById('auth-error');
-  const ok=document.getElementById('auth-success');
-  if(err){err.classList.toggle('visible',type==='error');err.textContent=type==='error'?msg:'';}
-  if(ok){ok.classList.toggle('visible',type==='success');ok.textContent=type==='success'?msg:'';}
-}
-function switchAuthTab(tab){
-  document.querySelectorAll('.auth-tab').forEach(b=>{
-    b.classList.toggle('active',b.dataset.authTab===tab);
-  });
-  document.getElementById('auth-form-login')?.classList.toggle('hidden',tab!=='login');
-  document.getElementById('auth-form-register')?.classList.toggle('hidden',tab!=='register');
-  showAuthMessage('error','');showAuthMessage('success','');
-}
-function setAuthLoading(formId,loading){
-  const form=document.getElementById(formId);
-  if(!form) return;
-  form.querySelectorAll('input,button').forEach(el=>{el.disabled=loading;});
-  const btn=form.querySelector('button[type="submit"]');
-  if(btn){
-    if(formId==='auth-form-login') btn.textContent=loading?'Entrando...':'Entrar';
-    else btn.textContent=loading?'Criando conta...':'Criar minha conta';
+function getDefaultUser(){
+  for(const acc of BUILTIN_ACCOUNTS){
+    const user=findUserByEmail(acc.email);
+    if(user) return user;
   }
+  return getUsersRegistry().users[0]||null;
 }
 async function hashPassword(password,saltB64){
   const enc=new TextEncoder();
@@ -4750,10 +4594,6 @@ async function hashPassword(password,saltB64){
   const hash=btoa(String.fromCharCode(...new Uint8Array(bits)));
   const saltOut=btoa(String.fromCharCode(...salt));
   return {hash,salt:saltOut};
-}
-async function verifyPassword(password,user){
-  const {hash}=await hashPassword(password,user.salt);
-  return hash===user.passwordHash;
 }
 async function ensureBuiltinUsers(){
   const registry=getUsersRegistry();
@@ -4833,110 +4673,18 @@ function updateAuthUserUI(){
   if(em) em.textContent=email;
   state.userName=name;
 }
-async function enterApp(user,remember){
+async function enterApp(user){
   currentAuthUser={id:user.id,email:user.email,name:user.name};
-  setSession(user,remember!==false);
-  document.body.classList.remove('auth-locked');
+  setSession(user,true);
   document.body.classList.add('authenticated');
-  document.getElementById('auth-screen')?.classList.add('hidden');
   updateAuthUserUI();
   if(!appBootstrapped) bootstrapApp();
   else{load();renderAll();updateClock();}
-  showToast('👋','Bem-vindo',`Olá, ${user.name}!`);
-}
-function showAuthScreen(){
-  document.body.classList.add('auth-locked');
-  document.body.classList.remove('authenticated','user-admin');
-  document.getElementById('auth-screen')?.classList.remove('hidden');
-  currentAuthUser=null;
-  appBootstrapped=false;
-  const loginEmail=document.getElementById('login-email');
-  if(loginEmail&&!loginEmail.value) loginEmail.value='giovane.ti@ficequity.com';
-}
-async function submitLogin(e){
-  e.preventDefault();
-  showAuthMessage('error','');showAuthMessage('success','');
-  const email=normalizeEmail(document.getElementById('login-email')?.value);
-  const password=document.getElementById('login-password')?.value||'';
-  const remember=!!document.getElementById('login-remember')?.checked;
-  if(!email||password.length<6){
-    showAuthMessage('error','Informe e-mail e senha (mínimo 6 caracteres).');
-    return;
-  }
-  const user=findUserByEmail(email);
-  if(!user){
-    showAuthMessage('error','E-mail não encontrado. Crie uma conta na aba ao lado.');
-    return;
-  }
-  setAuthLoading('auth-form-login',true);
-  try{
-    const ok=await verifyPassword(password,user);
-    if(!ok){showAuthMessage('error','Senha incorreta. Tente novamente.');return;}
-    await enterApp(user,remember);
-  }catch(err){
-    showAuthMessage('error','Não foi possível entrar. Recarregue a página e tente de novo.');
-  }finally{
-    setAuthLoading('auth-form-login',false);
-  }
-}
-async function submitRegister(e){
-  e.preventDefault();
-  showAuthMessage('error','');showAuthMessage('success','');
-  const name=String(document.getElementById('register-name')?.value||'').trim();
-  const email=normalizeEmail(document.getElementById('register-email')?.value);
-  const password=document.getElementById('register-password')?.value||'';
-  const password2=document.getElementById('register-password2')?.value||'';
-  if(name.length<2){showAuthMessage('error','Informe seu nome (mínimo 2 caracteres).');return;}
-  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-    showAuthMessage('error','Informe um e-mail válido.');return;
-  }
-  if(password.length<6){showAuthMessage('error','A senha deve ter pelo menos 6 caracteres.');return;}
-  if(password!==password2){showAuthMessage('error','As senhas não coincidem.');return;}
-  if(findUserByEmail(email)){
-    showAuthMessage('error','Este e-mail já está cadastrado. Use Entrar.');
-    return;
-  }
-  setAuthLoading('auth-form-register',true);
-  try{
-    const {hash,salt}=await hashPassword(password);
-    const user={
-      id:'u_'+Date.now()+'_'+Math.random().toString(36).slice(2,9),
-      email,name,salt,passwordHash:hash,createdAt:Date.now(),
-    };
-    const registry=getUsersRegistry();
-    registry.users.push(user);
-    saveUsersRegistry(registry);
-    migrateLegacyDataIfNeeded(user.id);
-    if(!localStorage.getItem(userDataKey(user.id))){
-      localStorage.setItem(userDataKey(user.id),JSON.stringify(createEmptyUserState(name)));
-    }
-    showAuthMessage('success','Conta criada! Entrando...');
-    await enterApp(user,true);
-  }catch(err){
-    showAuthMessage('error','Erro ao criar conta. Tente novamente.');
-  }finally{
-    setAuthLoading('auth-form-register',false);
-  }
-}
-function logoutUser(){
-  if(!confirm('Sair da sua conta neste dispositivo?')) return;
-  save();
-  clearSession();
-  currentAuthUser=null;
-  state=createEmptyUserState(null);
-  showAuthScreen();
-  switchAuthTab('login');
-  document.getElementById('login-password').value='';
 }
 async function initAuth(){
   await ensureBuiltinUsers();
-  const session=getSession();
-  if(session?.userId){
-    const user=findUserById(session.userId);
-    if(user){await enterApp(user,true);return;}
-    clearSession();
-  }
-  showAuthScreen();
+  const user=getDefaultUser();
+  if(user) await enterApp(user);
 }
 
 // ============================================================
