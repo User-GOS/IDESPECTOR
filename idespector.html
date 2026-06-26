@@ -829,6 +829,52 @@
   }
   select.input-field option { background:var(--bg-elevated); color:var(--text-primary); }
   [data-theme="light"] select.input-field option { background:#fff; color:#0f172a; }
+  .input-field[type="time"] { color-scheme:dark; font-variant-numeric:tabular-nums; }
+  [data-theme="light"] .input-field[type="time"] { color-scheme:light; }
+  .time-picker-wrap { position:relative; width:100%; }
+  .time-picker-wrap .input-field { padding-right:42px; }
+  .time-picker-wrap::after {
+    content:''; position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    width:16px; height:16px; pointer-events:none; opacity:.65;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='1.75'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 6v6l4 2'/%3E%3C/svg%3E") center/contain no-repeat;
+  }
+  .date-picker { position:relative; width:100%; }
+  .date-picker-trigger {
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px 16px; border-radius:12px;
+    background:var(--bg-glass); border:1px solid var(--border);
+    color:var(--text-primary); font-family:inherit; font-size:14px; font-weight:500;
+    cursor:pointer; transition:border-color .2s, box-shadow .2s, background .2s;
+    text-align:left;
+  }
+  .date-picker-trigger:hover { border-color:var(--border-bright); background:var(--bg-elevated); }
+  .date-picker-trigger[aria-expanded="true"] {
+    border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-dim); background:var(--bg-elevated);
+  }
+  .date-picker-text { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .date-picker-text.muted { color:var(--text-muted); font-weight:400; }
+  .date-picker-icon { color:var(--accent-2); flex-shrink:0; opacity:.9; }
+  .date-picker-popover {
+    position:absolute; top:calc(100% + 8px); left:0; right:0; z-index:220;
+    padding:14px; border-radius:var(--radius-md);
+    background:var(--bg-elevated);
+    border:1px solid var(--border-bright);
+    box-shadow:var(--shadow-hover);
+    animation:datePopIn .22s var(--ease-out);
+  }
+  @keyframes datePopIn { from{opacity:0;transform:translateY(-6px) scale(.98)} to{opacity:1;transform:none} }
+  .date-picker-foot {
+    display:flex; justify-content:space-between; gap:8px; margin-top:12px; padding-top:10px;
+    border-top:1px solid var(--border);
+  }
+  .date-picker-foot-btn {
+    border:none; background:transparent; color:var(--text-muted);
+    font-size:12px; font-weight:600; cursor:pointer; padding:6px 12px; border-radius:8px;
+    font-family:inherit; transition:background .15s, color .15s;
+  }
+  .date-picker-foot-btn:hover { background:var(--bg-glass); color:var(--text-primary); }
+  .date-picker-foot-btn.accent { color:var(--accent-2); }
+  .date-picker-foot-btn.accent:hover { background:var(--accent-dim); }
   .custom-select { position:relative; width:100%; }
   .custom-select-trigger {
     width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;
@@ -1047,63 +1093,68 @@
     min-height:0;
   }
   .agenda-calendar-wrap {
-    padding:12px;
-    border-radius:var(--radius-md);
-    background:var(--bg-glass);
-    border:1px solid var(--border);
+    padding:16px;
+    border-radius:var(--radius-lg);
+    background:linear-gradient(165deg, rgba(59,130,246,0.08) 0%, var(--bg-glass) 42%, var(--bg-card) 100%);
+    border:1px solid rgba(59,130,246,0.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);
     align-self:start;
   }
+  .ui-cal, .agenda-cal { width:100%; }
   .agenda-cal-head {
     display:flex; align-items:center; justify-content:space-between;
-    gap:8px; margin-bottom:10px;
+    gap:8px; margin-bottom:12px;
   }
   .agenda-cal-title {
-    font-size:13px; font-weight:700; color:var(--text-primary);
+    font-size:14px; font-weight:700; color:var(--text-primary);
     text-transform:capitalize; letter-spacing:-0.02em; flex:1; text-align:center;
   }
   .agenda-cal-nav {
-    width:28px; height:28px; padding:0; min-width:28px;
-    font-size:16px; line-height:1;
+    width:32px; height:32px; padding:0; min-width:32px;
+    font-size:18px; line-height:1; border-radius:10px;
   }
   .agenda-cal-dows {
-    display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:4px;
+    display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px;
   }
   .agenda-cal-dow {
     font-size:10px; font-weight:700; text-align:center;
-    color:var(--text-muted); text-transform:uppercase; padding:2px 0;
+    color:var(--text-muted); text-transform:uppercase; padding:4px 0; letter-spacing:.04em;
   }
   .agenda-cal-grid {
-    display:grid; grid-template-columns:repeat(7,1fr); gap:2px;
+    display:grid; grid-template-columns:repeat(7,1fr); gap:4px;
   }
   .agenda-cal-day {
-    aspect-ratio:1; border:none; border-radius:8px;
+    aspect-ratio:1; min-height:34px; border:none; border-radius:10px;
     background:transparent; color:var(--text-secondary);
-    font-size:12px; font-weight:500; cursor:pointer;
-    position:relative; transition:background .15s, color .15s;
+    font-size:12px; font-weight:600; cursor:pointer;
+    position:relative; transition:background .15s, color .15s, transform .12s;
     font-family:inherit;
   }
-  .agenda-cal-day:hover { background:var(--bg-elevated); color:var(--text-primary); }
-  .agenda-cal-day.other-month { opacity:.35; }
+  .agenda-cal-day:hover { background:var(--bg-elevated); color:var(--text-primary); transform:translateY(-1px); }
+  .agenda-cal-day.other-month { opacity:.32; }
   .agenda-cal-day.today {
-    box-shadow:inset 0 0 0 1px var(--accent);
-    color:var(--accent-2); font-weight:700;
+    box-shadow:inset 0 0 0 1.5px var(--accent);
+    color:var(--accent-2);
   }
   .agenda-cal-day.selected {
-    background:var(--accent-dim); color:var(--text-primary); font-weight:700;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    color:#fff; font-weight:700;
+    box-shadow:0 4px 14px var(--accent-glow);
   }
-  .agenda-cal-day.selected.today { background:rgba(59,130,246,0.22); }
+  .agenda-cal-day.selected.today { box-shadow:0 4px 14px var(--accent-glow), inset 0 0 0 1px rgba(255,255,255,0.25); }
   .agenda-cal-day.has-events::after {
-    content:''; position:absolute; bottom:4px; left:50%;
-    transform:translateX(-50%); width:4px; height:4px;
-    border-radius:50%; background:var(--accent);
+    content:''; position:absolute; bottom:5px; left:50%;
+    transform:translateX(-50%); width:5px; height:5px;
+    border-radius:50%; background:var(--accent-2);
   }
+  .agenda-cal-day.selected.has-events::after { background:#fff; }
   .agenda-cal-today {
-    display:block; width:100%; margin-top:10px; padding:6px 0;
-    border:none; border-radius:8px; background:transparent;
-    color:var(--accent-2); font-size:11px; font-weight:600;
-    cursor:pointer; transition:background .15s;
+    display:block; width:100%; margin-top:12px; padding:8px 0;
+    border:none; border-radius:10px; background:var(--accent-dim);
+    color:var(--accent-2); font-size:12px; font-weight:600;
+    cursor:pointer; transition:background .15s, color .15s;
   }
-  .agenda-cal-today:hover { background:var(--accent-dim); }
+  .agenda-cal-today:hover { background:rgba(59,130,246,0.2); color:var(--text-primary); }
   #agenda-card .agenda-count {
     font-size:11px; font-weight:600; color:var(--text-muted);
     padding:3px 10px; border-radius:999px;
@@ -4795,6 +4846,153 @@ function goAgendaToday(){
   renderAgenda();
 }
 
+const CAL_MONTH_NAMES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CAL_DOW_SHORT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const _pickerState={};
+
+function formatPickerDate(dateStr){
+  if(!dateStr) return '';
+  const p=dateStr.split('-').map(Number);
+  return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function datePickerInput(id,value='',placeholder='Selecionar data'){
+  const v=value||'';
+  const labelText=v?formatPickerDate(v):placeholder;
+  return `<div class="date-picker" data-picker="${id}">
+    <input type="hidden" id="${id}" value="${v}">
+    <button type="button" class="date-picker-trigger" onclick="toggleDatePicker('${id}',event)" aria-expanded="false" aria-label="Escolher data">
+      <span class="date-picker-text${v?'':' muted'}" id="${id}-label">${labelText}</span>
+      <svg class="date-picker-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+    </button>
+    <div class="date-picker-popover" id="${id}-pop" hidden onclick="event.stopPropagation()"></div>
+  </div>`;
+}
+
+function timePickerInput(id,value='09:00'){
+  return `<div class="time-picker-wrap"><input class="input-field" id="${id}" type="time" value="${value}"></div>`;
+}
+
+function ensurePickerState(id){
+  if(!_pickerState[id]){
+    const raw=document.getElementById(id)?.value||'';
+    const p=(raw||todayStr()).split('-').map(Number);
+    _pickerState[id]={year:p[0],month:p[1]-1};
+  }
+  return _pickerState[id];
+}
+
+function setDatePickerValue(id,value,placeholder='Selecionar data'){
+  const input=document.getElementById(id);
+  const label=document.getElementById(id+'-label');
+  if(input) input.value=value||'';
+  if(label){
+    label.textContent=value?formatPickerDate(value):placeholder;
+    label.classList.toggle('muted',!value);
+  }
+  if(value){
+    const p=value.split('-').map(Number);
+    _pickerState[id]={year:p[0],month:p[1]-1};
+  }else delete _pickerState[id];
+}
+
+function buildCalendarDayCells(year,month,selected,today,onDayClick,eventDays){
+  const first=new Date(year,month,1);
+  const startPad=first.getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const daysInPrev=new Date(year,month,0).getDate();
+  const events=eventDays||null;
+  let cells='';
+  for(let i=startPad-1;i>=0;i--){
+    const day=daysInPrev-i;
+    const ds=localDateStr(new Date(year,month-1,day));
+    const cls=['agenda-cal-day','other-month',ds===selected?'selected':'',events&&events.has(ds)?'has-events':''].filter(Boolean).join(' ');
+    cells+=`<button type="button" class="${cls}" onclick="${onDayClick(ds)}">${day}</button>`;
+  }
+  for(let day=1;day<=daysInMonth;day++){
+    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const cls=['agenda-cal-day',ds===today?'today':'',ds===selected?'selected':'',events&&events.has(ds)?'has-events':''].filter(Boolean).join(' ');
+    cells+=`<button type="button" class="${cls}" onclick="${onDayClick(ds)}">${day}</button>`;
+  }
+  const totalCells=startPad+daysInMonth;
+  const remainder=totalCells%7===0?0:7-totalCells%7;
+  for(let day=1;day<=remainder;day++){
+    const ds=localDateStr(new Date(year,month+1,day));
+    const cls=['agenda-cal-day','other-month',ds===selected?'selected':'',events&&events.has(ds)?'has-events':''].filter(Boolean).join(' ');
+    cells+=`<button type="button" class="${cls}" onclick="${onDayClick(ds)}">${day}</button>`;
+  }
+  return cells;
+}
+
+function buildCalendarShell(year,month,cells,prevFn,nextFn,footerHtml){
+  return `<div class="ui-cal agenda-cal">
+    <div class="agenda-cal-head">
+      <button type="button" class="btn btn-ghost btn-sm agenda-cal-nav" onclick="${prevFn}" aria-label="Mês anterior">‹</button>
+      <span class="agenda-cal-title">${CAL_MONTH_NAMES[month]} ${year}</span>
+      <button type="button" class="btn btn-ghost btn-sm agenda-cal-nav" onclick="${nextFn}" aria-label="Próximo mês">›</button>
+    </div>
+    <div class="agenda-cal-dows">${CAL_DOW_SHORT.map(d=>`<span class="agenda-cal-dow">${d}</span>`).join('')}</div>
+    <div class="agenda-cal-grid">${cells}</div>
+    ${footerHtml||''}
+  </div>`;
+}
+
+function closeAllDatePickers(){
+  document.querySelectorAll('.date-picker-popover').forEach(pop=>{ pop.hidden=true; });
+  document.querySelectorAll('.date-picker-trigger').forEach(btn=>btn.setAttribute('aria-expanded','false'));
+}
+
+function toggleDatePicker(id,e){
+  e?.stopPropagation();
+  const pop=document.getElementById(id+'-pop');
+  if(!pop) return;
+  const willOpen=pop.hidden;
+  closeAllDatePickers();
+  closeCustomSelectsOnly();
+  if(willOpen){
+    renderDatePickerPopover(id);
+    pop.hidden=false;
+    document.querySelector(`[data-picker="${id}"] .date-picker-trigger`)?.setAttribute('aria-expanded','true');
+  }
+}
+
+function renderDatePickerPopover(id){
+  const pop=document.getElementById(id+'-pop');
+  const input=document.getElementById(id);
+  if(!pop||!input) return;
+  const st=ensurePickerState(id);
+  const selected=input.value||'';
+  const today=todayStr();
+  const cells=buildCalendarDayCells(st.year,st.month,selected,today,ds=>`pickDate('${id}','${ds}')`,null);
+  const footer=`<div class="date-picker-foot">
+    <button type="button" class="date-picker-foot-btn" onclick="clearPickerDate('${id}')">Limpar</button>
+    <button type="button" class="date-picker-foot-btn accent" onclick="setPickerToday('${id}')">Hoje</button>
+  </div>`;
+  pop.innerHTML=buildCalendarShell(st.year,st.month,cells,`shiftPickerMonth('${id}',-1)`,`shiftPickerMonth('${id}',1)`,footer);
+}
+
+function shiftPickerMonth(id,delta){
+  const st=ensurePickerState(id);
+  st.month+=delta;
+  while(st.month>11){ st.month-=12; st.year++; }
+  while(st.month<0){ st.month+=12; st.year--; }
+  renderDatePickerPopover(id);
+}
+
+function pickDate(id,dateStr){
+  setDatePickerValue(id,dateStr);
+  closeAllDatePickers();
+}
+
+function setPickerToday(id){
+  pickDate(id,todayStr());
+}
+
+function clearPickerDate(id){
+  setDatePickerValue(id,'');
+  closeAllDatePickers();
+}
+
 function selectAgendaDate(dateStr){
   _calSelected=dateStr;
   const p=dateStr.split('-').map(Number);
@@ -4806,41 +5004,11 @@ function selectAgendaDate(dateStr){
 function renderAgendaCalendar(){
   const el=document.getElementById('agenda-calendar');
   if(!el) return;
-  const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const dow=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const today=todayStr();
-  const first=new Date(_calYear,_calMonth,1);
-  const startPad=first.getDay();
-  const daysInMonth=new Date(_calYear,_calMonth+1,0).getDate();
-  const daysInPrev=new Date(_calYear,_calMonth,0).getDate();
   const eventDays=new Set((state.events||[]).map(e=>eventDate(e)));
-  let cells='';
-  for(let i=startPad-1;i>=0;i--){
-    const day=daysInPrev-i;
-    const ds=localDateStr(new Date(_calYear,_calMonth-1,day));
-    cells+=`<button type="button" class="agenda-cal-day other-month${ds===_calSelected?' selected':''}${eventDays.has(ds)?' has-events':''}" onclick="selectAgendaDate('${ds}')">${day}</button>`;
-  }
-  for(let day=1;day<=daysInMonth;day++){
-    const ds=`${_calYear}-${String(_calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const cls=['agenda-cal-day',ds===today?'today':'',ds===_calSelected?'selected':'',eventDays.has(ds)?'has-events':''].filter(Boolean).join(' ');
-    cells+=`<button type="button" class="${cls}" onclick="selectAgendaDate('${ds}')">${day}</button>`;
-  }
-  const totalCells=startPad+daysInMonth;
-  const remainder=totalCells%7===0?0:7-totalCells%7;
-  for(let day=1;day<=remainder;day++){
-    const ds=localDateStr(new Date(_calYear,_calMonth+1,day));
-    cells+=`<button type="button" class="agenda-cal-day other-month${ds===_calSelected?' selected':''}${eventDays.has(ds)?' has-events':''}" onclick="selectAgendaDate('${ds}')">${day}</button>`;
-  }
-  el.innerHTML=`<div class="agenda-cal">
-    <div class="agenda-cal-head">
-      <button type="button" class="btn btn-ghost btn-sm agenda-cal-nav" onclick="shiftAgendaCalMonth(-1)" aria-label="Mês anterior">‹</button>
-      <span class="agenda-cal-title">${monthNames[_calMonth]} ${_calYear}</span>
-      <button type="button" class="btn btn-ghost btn-sm agenda-cal-nav" onclick="shiftAgendaCalMonth(1)" aria-label="Próximo mês">›</button>
-    </div>
-    <div class="agenda-cal-dows">${dow.map(d=>`<span class="agenda-cal-dow">${d}</span>`).join('')}</div>
-    <div class="agenda-cal-grid">${cells}</div>
-    <button type="button" class="agenda-cal-today" onclick="goAgendaToday()">Ir para hoje</button>
-  </div>`;
+  const cells=buildCalendarDayCells(_calYear,_calMonth,_calSelected,today,ds=>`selectAgendaDate('${ds}')`,eventDays);
+  const footer=`<button type="button" class="agenda-cal-today" onclick="goAgendaToday()">Ir para hoje</button>`;
+  el.innerHTML=buildCalendarShell(_calYear,_calMonth,cells,'shiftAgendaCalMonth(-1)','shiftAgendaCalMonth(1)',footer);
 }
 
 function renderAgenda(){
@@ -4961,6 +5129,7 @@ function initCustomSelects(root){
     const valueEl=wrap.querySelector('.custom-select-value');
     trigger?.addEventListener('click',e=>{
       e.stopPropagation();
+      closeAllDatePickers();
       document.querySelectorAll('.custom-select.open').forEach(s=>{if(s!==wrap)s.classList.remove('open');});
       wrap.classList.toggle('open');
     });
@@ -4976,8 +5145,12 @@ function initCustomSelects(root){
     });
   });
 }
-function closeCustomSelects(){
+function closeCustomSelectsOnly(){
   document.querySelectorAll('.custom-select.open').forEach(s=>s.classList.remove('open'));
+}
+function closeCustomSelects(){
+  closeCustomSelectsOnly();
+  closeAllDatePickers();
 }
 document.addEventListener('click',closeCustomSelects);
 
@@ -5043,8 +5216,8 @@ function setCustomSelect(id,value){
 function fillTaskForm(task){
   document.getElementById('m-task-text').value=task.text||'';
   document.getElementById('m-task-notes').value=task.notes||'';
-  document.getElementById('m-task-due').value=task.dueDate||'';
   document.getElementById('m-task-due-time').value=task.dueTime||'';
+  setDatePickerValue('m-task-due',task.dueDate||'','Sem prazo');
   document.getElementById('m-task-assignee').value=task.assignee||'';
   document.getElementById('m-task-tags').value=(task.tags||[]).join(', ');
   document.getElementById('m-task-link').value=task.link||'';
@@ -5093,7 +5266,7 @@ function openEditTask(id){
 
 function fillEventForm(ev){
   document.getElementById('m-ev-title').value=ev.title||'';
-  document.getElementById('m-ev-date').value=eventDate(ev);
+  setDatePickerValue('m-ev-date',eventDate(ev));
   document.getElementById('m-ev-time').value=ev.time||'09:00';
   document.getElementById('m-ev-sub').value=ev.sub||'';
   setCustomSelect('m-ev-status',ev.status||'confirmado');
@@ -5106,7 +5279,7 @@ function openEditEvent(id){
 
 function fillReminderForm(r){
   document.getElementById('m-rem-text').value=r.text||'';
-  document.getElementById('m-rem-date').value=r.date||todayStr();
+  setDatePickerValue('m-rem-date',r.date||todayStr());
   document.getElementById('m-rem-time').value=r.time||'09:00';
   setCustomSelect('m-rem-pri',r.priority||'media');
 }
@@ -5163,9 +5336,9 @@ function openModal(type,editId){
       </div>
       <div class="input-row" style="margin-bottom:0">
         <div class="form-group" style="flex:1"><label class="form-label">Prazo (data)</label>
-          <input class="input-field" id="m-task-due" type="date" value="${isEdit?'':todayStr()}"></div>
+          ${datePickerInput('m-task-due',isEdit?'':todayStr(),'Sem prazo')}</div>
         <div class="form-group" style="flex:1"><label class="form-label">Horário limite</label>
-          <input class="input-field" id="m-task-due-time" type="time"></div>
+          ${timePickerInput('m-task-due-time')}</div>
       </div>
       <div class="input-row" style="margin-bottom:0">
         <div class="form-group" style="flex:1"><label class="form-label">Responsável</label>
@@ -5189,9 +5362,9 @@ function openModal(type,editId){
         <input class="input-field" id="m-rem-text" placeholder="Do que você precisa lembrar?"></div>
       <div class="input-row">
         <div class="form-group" style="flex:1"><label class="form-label">Data</label>
-          <input class="input-field" id="m-rem-date" type="date" value="${isEditRem?'':todayStr()}"></div>
+          ${datePickerInput('m-rem-date',isEditRem?'':todayStr())}</div>
         <div class="form-group" style="flex:1"><label class="form-label">Horário</label>
-          <input class="input-field" id="m-rem-time" type="time" value="09:00"></div>
+          ${timePickerInput('m-rem-time','09:00')}</div>
       </div>
       <div class="form-group"><label class="form-label">Prioridade</label>
         ${selectOptions('m-rem-pri',[
@@ -5212,9 +5385,9 @@ function openModal(type,editId){
         <input class="input-field" id="m-ev-title" placeholder="Nome do compromisso..."></div>
       <div class="input-row">
         <div class="form-group" style="flex:1"><label class="form-label">Data</label>
-          <input class="input-field" id="m-ev-date" type="date" value="${isEditEvent?'':todayStr()}"></div>
+          ${datePickerInput('m-ev-date',isEditEvent?'':todayStr())}</div>
         <div class="form-group" style="flex:1"><label class="form-label">Horário</label>
-          <input class="input-field" id="m-ev-time" type="time" value="09:00"></div>
+          ${timePickerInput('m-ev-time','09:00')}</div>
       </div>
       <div class="form-group"><label class="form-label">Local / Observação</label>
         <input class="input-field" id="m-ev-sub" placeholder="Sala, link, local..."></div>
@@ -5245,7 +5418,7 @@ function openModal(type,editId){
         <div class="form-group" style="flex:1"><label class="form-label">Progresso atual</label>
           <input class="input-field" id="m-goal-current" type="number" min="0" value="0"></div>
         <div class="form-group" style="flex:1"><label class="form-label">Prazo</label>
-          <input class="input-field" id="m-goal-deadline" type="date"></div>
+          ${datePickerInput('m-goal-deadline','','Sem prazo')}</div>
       </div>
       <button class="btn btn-primary" onclick="saveGoal()" style="width:100%;justify-content:center;margin-top:8px">${editingGoalId?'Salvar':'Criar meta'}</button>`,
   };
@@ -5281,7 +5454,7 @@ function openModal(type,editId){
       document.getElementById('m-goal-target').value=g.target||'';
       document.getElementById('m-goal-unit').value=g.unit||'';
       document.getElementById('m-goal-current').value=g.current||0;
-      document.getElementById('m-goal-deadline').value=g.deadline||'';
+      setDatePickerValue('m-goal-deadline',g.deadline||'','Sem prazo');
     }
   }
   const modalBox=document.getElementById('modal-box');
@@ -5290,6 +5463,7 @@ function openModal(type,editId){
 }
 function closeModal(){
   closeCustomSelects();
+  closeAllDatePickers();
   document.getElementById('modal-box')?.classList.remove('task-modal');
   editingTaskId=null;
   editingEventId=null;
@@ -6929,6 +7103,11 @@ window.insertTranslatorPhrase=insertTranslatorPhrase;
 window.shiftAgendaCalMonth=shiftAgendaCalMonth;
 window.selectAgendaDate=selectAgendaDate;
 window.goAgendaToday=goAgendaToday;
+window.toggleDatePicker=toggleDatePicker;
+window.pickDate=pickDate;
+window.shiftPickerMonth=shiftPickerMonth;
+window.setPickerToday=setPickerToday;
+window.clearPickerDate=clearPickerDate;
 
 // ============================================================
 // NAV
