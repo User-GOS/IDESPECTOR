@@ -2987,7 +2987,7 @@
     <div class="card" id="news-card">
       <div class="news-card-body">
         <div class="news-card-head">
-          <div class="news-card-title"><span aria-hidden="true">📰</span> Notícias do dia</div>
+          <div class="news-card-title"><span aria-hidden="true">📰</span> Notícias de SP</div>
           <span class="news-date" id="news-date">—</span>
         </div>
         <div class="news-list-wrap" id="news-list-wrap">
@@ -3564,8 +3564,9 @@ function dailyNewsOfflineMessage(){
   return 'Não foi possível carregar as notícias. Toque em Atualizar.';
 }
 const NEWS_FEEDS_FALLBACK=[
-  {name:'G1',url:'https://g1.globo.com/rss/g1/'},
-  {name:'BBC News Brasil',url:'https://feeds.bbci.co.uk/portuguese/rss.xml'},
+  {name:'G1 São Paulo',url:'https://g1.globo.com/rss/g1/sao-paulo/'},
+  {name:'Google News · SP',url:'https://news.google.com/rss/search?q=S%C3%A3o+Paulo&hl=pt-BR&gl=BR&ceid=BR:pt-419'},
+  {name:'G1 · SP',url:'https://g1.globo.com/rss/g1/sp/'},
 ];
 async function fetchNewsFromApi(limit=8){
   const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
@@ -3654,7 +3655,7 @@ async function loadDailyNews(force=false){
   }
 }
 function dailyNewsCacheKey(dateStr=todayStr()){
-  return 'idespector-daily-news-v2-'+dateStr;
+  return 'idespector-daily-news-v3-sp-'+dateStr;
 }
 function formatNewsDateLabel(dateStr=todayStr()){
   const p=dateStr.split('-').map(Number);
