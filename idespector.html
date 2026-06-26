@@ -283,10 +283,6 @@
     from { transform:scale(0); opacity:0.42; }
     to { transform:scale(2.6); opacity:0; }
   }
-  @keyframes pomoRingPulse {
-    0%,100% { filter:drop-shadow(0 0 4px rgba(37,99,235,0.15)); }
-    50% { filter:drop-shadow(0 0 14px rgba(37,99,235,0.45)); }
-  }
   .ui-animate { animation:uiStaggerIn .52s var(--ease-out) both; }
   .ui-ripple {
     position:absolute; border-radius:50%; pointer-events:none; z-index:2;
@@ -294,13 +290,11 @@
   }
   .metric-num.metric-pop { animation:metricPop .38s var(--ease-out); display:inline-block; }
   .foco-time.clock-tick, .header-time.clock-tick { animation:clockTick .45s var(--ease-out); }
-  .pomodoro-active .pomodoro-ring { animation:pomoRingPulse 2.2s ease-in-out infinite; }
-  .pomodoro-active .pomodoro-time-val { color:var(--accent-2); transition:color .3s; }
   .habit-check.checked { animation:checkBounce .38s var(--ease-out); }
   .task-check.checked { animation:checkBounce .38s var(--ease-out); }
   .btn, .quick-strip-btn, .nav-item, .metric-card.clickable { position:relative; overflow:hidden; }
   @media (prefers-reduced-motion:reduce) {
-    .ui-animate,.metric-pop,.clock-tick,.pomodoro-active .pomodoro-ring,
+    .ui-animate,.metric-pop,.clock-tick,
     .habit-check.checked,.task-check.checked,.chip.live,.ui-ripple {
       animation:none !important;
     }
@@ -1835,7 +1829,7 @@
   .list-actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
   .view-dashboard-compact .quick-strip { grid-template-columns:repeat(3,1fr); }
   @media (min-width: 1200px) {
-    .view-dashboard-compact .quick-strip { grid-template-columns:repeat(6,1fr); }
+    .view-dashboard-compact .quick-strip { grid-template-columns:repeat(5,1fr); }
   }
   @media (max-width: 900px) {
     .quick-strip { grid-template-columns:repeat(2,1fr); }
@@ -1847,29 +1841,6 @@
   }
 
   /* PRODUTIVIDADE */
-  .pomodoro-wrap { text-align:center; padding:4px 0 8px; }
-  .pomodoro-ring {
-    position:relative; width:140px; height:140px; margin:0 auto 14px;
-  }
-  .pomodoro-ring svg { transform:rotate(-90deg); width:100%; height:100%; }
-  .pomodoro-ring-bg { fill:none; stroke:var(--border); stroke-width:6; }
-  .pomodoro-ring-progress {
-    fill:none; stroke:url(#pomoGrad); stroke-width:6; stroke-linecap:round;
-    transition:stroke-dashoffset .5s linear;
-  }
-  .pomodoro-time {
-    position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    font-family:'JetBrains Mono',monospace;
-  }
-  .pomodoro-time-val { font-size:28px; font-weight:600; letter-spacing:1px; line-height:1; }
-  .pomodoro-time-phase { font-size:10px; font-weight:700; color:var(--accent-2); margin-top:4px; text-transform:uppercase; letter-spacing:.8px; }
-  .pomodoro-actions { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
-  .pomodoro-stats {
-    display:flex; justify-content:center; gap:16px; margin-top:12px;
-    font-size:11px; color:var(--text-muted); font-weight:600;
-  }
-  .pomodoro-stats strong { color:var(--accent); font-weight:700; }
   .habit-item {
     display:flex; align-items:center; gap:12px; padding:12px 14px;
     border-radius:12px; background:var(--bg-glass); border:1px solid var(--border);
@@ -2573,10 +2544,6 @@
       <span class="qs-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span>
       <span class="qs-label"><span class="qs-title">Notas</span></span>
     </button>
-    <button class="quick-strip-btn" onclick="navTo('productivity');startPomodoro()">
-      <span class="qs-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
-      <span class="qs-label"><span class="qs-title">Pomodoro</span></span>
-    </button>
     <button class="quick-strip-btn" onclick="toggleFocus()">
       <span class="qs-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
       <span class="qs-label"><span class="qs-title">Modo foco</span></span>
@@ -2631,14 +2598,7 @@
   </div>
 
   <!-- ROW: Produtividade -->
-  <div class="dashboard-balanced" id="row-productivity">
-    <div class="card" id="pomodoro-card">
-      <div class="card-header">
-        <div class="card-title"><span class="dot"></span>Pomodoro</div>
-        <button class="btn btn-soft btn-sm" onclick="navTo('productivity')">Ver mais</button>
-      </div>
-      <div class="pomodoro-wrap" id="pomodoro-widget"></div>
-    </div>
+  <div class="dashboard-balanced view-single" id="row-productivity">
     <div class="card" id="habits-card">
       <div class="card-header">
         <div class="card-title"><span class="dot"></span>Hábitos de Hoje</div>
@@ -2852,7 +2812,7 @@ let state = {
   tasks: [], reminders: [], alarms: [], events: [],
   chat: [],
   focusMode: false, userName: null,
-  whatsapp: { enabled: false, phone: '', apiKey: '', alarms: true, reminders: true, events: true, tasks: true, pomodoro: true, snooze: true },
+  whatsapp: { enabled: false, phone: '', apiKey: '', alarms: true, reminders: true, events: true, tasks: true, snooze: true },
   whatsappSent: {}, whatsappSentDate: null,
   telegram: { enabled: false, botToken: '', chatId: '' },
   linkedin: { profileUrl: '' },
@@ -2922,10 +2882,6 @@ function migrateProductivity(){
     changed=true;
   }
   if(!state.goals) { state.goals=[]; changed=true; }
-  if(!state.pomodoro){
-    state.pomodoro={workMin:25,shortBreak:5,longBreak:15,phase:'idle',endsAt:null,sessionsToday:0,date:null,totalMin:0};
-    changed=true;
-  }
   if(changed) save();
 }
 function migrateGamification(){
@@ -2957,7 +2913,7 @@ function migrateTranslator(){
     save();
   }
 }
-const DEFAULT_WHATSAPP_NOTIFY={alarms:true,reminders:true,events:true,tasks:true,pomodoro:true,snooze:true};
+const DEFAULT_WHATSAPP_NOTIFY={alarms:true,reminders:true,events:true,tasks:true,snooze:true};
 function migrateWhatsApp(){
   const base={enabled:false,phone:'',apiKey:'',...DEFAULT_WHATSAPP_NOTIFY};
   if(!state.whatsapp){state.whatsapp={...base};save();return;}
@@ -3207,8 +3163,6 @@ function createEmptyUserState(name){
     notes:{content:'',updated:null},
     habits:[],goals:[],
     gamification:{xp:0,level:0,totalHabitsCompleted:0,perfectDays:0,perfectDaysLog:{},badges:[],gameCleared:false},
-    pomodoro:{workMin:25,shortBreak:5,longBreak:15,phase:'idle',endsAt:null,sessionsToday:0,date:null,totalMin:0},
-    productivityTab:'pomodoro',
     translator:{dir:'pt-en'},
     appVersion:APP_VERSION,
   };
@@ -3726,7 +3680,6 @@ function updateClock(){
   document.getElementById('greeting-main').innerHTML=`<span>${gr}${name}</span>`;
   document.getElementById('greeting-tag').textContent=new Date().toLocaleString('pt-BR',{weekday:'long'}).replace(/^\w/,c=>c.toUpperCase());
   checkAlarms(now);
-  tickPomodoro();
   pulseClockTick();
 }
 
@@ -4054,127 +4007,8 @@ function testReminder(id){
 }
 
 // ============================================================
-// PRODUTIVIDADE — Pomodoro, hábitos, metas, kanban
+// PRODUTIVIDADE — hábitos, metas, kanban
 // ============================================================
-function ensurePomodoroDay(){
-  const p=state.pomodoro;
-  if(!p) return;
-  if(p.date!==todayStr()){
-    p.sessionsToday=0;
-    p.date=todayStr();
-    if(p.phase!=='idle'){ p.phase='idle'; p.endsAt=null; }
-    save();
-  }
-}
-function pomoRemainingMs(){
-  const p=state.pomodoro;
-  if(!p||p.phase==='idle'||!p.endsAt) return p?.workMin*60000||1500000;
-  return Math.max(0,p.endsAt-Date.now());
-}
-function pomoTotalMs(){
-  const p=state.pomodoro;
-  if(!p) return 1500000;
-  if(p.phase==='work') return p.workMin*60000;
-  if(p.phase==='break') return p.shortBreak*60000;
-  return p.workMin*60000;
-}
-function formatPomoTime(ms){
-  const s=Math.ceil(ms/1000);
-  const m=Math.floor(s/60);
-  const r=s%60;
-  return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
-}
-function pomoPhaseLabel(){
-  const p=state.pomodoro;
-  if(!p||p.phase==='idle') return 'Pronto';
-  return p.phase==='work'?'Foco':'Pausa';
-}
-function startPomodoro(){
-  ensurePomodoroDay();
-  const p=state.pomodoro;
-  p.phase='work';
-  p.endsAt=Date.now()+p.workMin*60000;
-  save();renderPomodoro();
-  showToast('🍅','Pomodoro iniciado',`${p.workMin} minutos de foco. Você consegue!`);
-}
-function pausePomodoro(){
-  const p=state.pomodoro;
-  if(p.phase==='idle') return;
-  p.pausedRemaining=pomoRemainingMs();
-  p.phase='idle';
-  p.endsAt=null;
-  save();renderPomodoro();
-}
-function resumePomodoro(){
-  const p=state.pomodoro;
-  if(!p.pausedRemaining) return startPomodoro();
-  p.phase=p.lastPhase||'work';
-  p.endsAt=Date.now()+p.pausedRemaining;
-  p.pausedRemaining=null;
-  save();renderPomodoro();
-}
-function resetPomodoro(){
-  state.pomodoro.phase='idle';
-  state.pomodoro.endsAt=null;
-  state.pomodoro.pausedRemaining=null;
-  save();renderPomodoro();
-}
-function completePomodoroPhase(){
-  const p=state.pomodoro;
-  if(p.phase==='work'){
-    p.sessionsToday=(p.sessionsToday||0)+1;
-    p.totalMin=(p.totalMin||0)+p.workMin;
-    p.lastPhase='break';
-    p.phase='break';
-    p.endsAt=Date.now()+p.shortBreak*60000;
-    showToast('☕','Pausa!',`Bom trabalho! Descanse ${p.shortBreak} minutos.`);
-    notifyUser('🍅','Pomodoro concluído!',`Bom trabalho! Descanse ${p.shortBreak} minutos.`,'pomodoro','work',String(p.sessionsToday||1));
-  }else{
-    p.phase='idle';
-    p.endsAt=null;
-    showToast('🍅','Pausa encerrada','Pronto para mais um ciclo de foco?');
-    notifyUser('☕','Pausa encerrada','Pronto para mais um ciclo de foco?','pomodoro','break',String(Date.now()));
-  }
-  save();renderPomodoro();updateMetrics();
-}
-function tickPomodoro(){
-  if(!state.pomodoro||state.pomodoro.phase==='idle') return;
-  ensurePomodoroDay();
-  if(state.pomodoro.endsAt&&Date.now()>=state.pomodoro.endsAt) completePomodoroPhase();
-  else renderPomodoro(false);
-}
-function renderPomodoro(updateWidget=true){
-  const el=document.getElementById('pomodoro-widget');
-  if(!el) return;
-  const p=state.pomodoro||{};
-  const rem=pomoRemainingMs();
-  const total=pomoTotalMs();
-  const pct=p.phase==='idle'?0:Math.min(100,100-(rem/total)*100);
-  const circ=2*Math.PI*62;
-  const dash=circ*(pct/100);
-  const running=p.phase!=='idle';
-  const card=document.getElementById('pomodoro-card');
-  if(card) card.classList.toggle('pomodoro-active',running);
-  el.innerHTML=`
-    <svg width="0" height="0" aria-hidden="true"><defs><linearGradient id="pomoGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-2)"/></linearGradient></defs></svg>
-    <div class="pomodoro-ring">
-      <svg viewBox="0 0 140 140"><circle class="pomodoro-ring-bg" cx="70" cy="70" r="62"/><circle class="pomodoro-ring-progress" cx="70" cy="70" r="62" stroke-dasharray="${dash} ${circ}" stroke-dashoffset="0"/></svg>
-      <div class="pomodoro-time">
-        <span class="pomodoro-time-val">${formatPomoTime(rem)}</span>
-        <span class="pomodoro-time-phase">${pomoPhaseLabel()}</span>
-      </div>
-    </div>
-    <div class="pomodoro-actions">
-      ${!running?`<button type="button" class="btn btn-primary btn-sm" onclick="startPomodoro()">▶ Iniciar foco</button>`:''}
-      ${running?`<button type="button" class="btn btn-secondary btn-sm" onclick="pausePomodoro()">⏸ Pausar</button>`:''}
-      ${!running&&p.pausedRemaining?`<button type="button" class="btn btn-soft btn-sm" onclick="resumePomodoro()">↻ Continuar</button>`:''}
-      <button type="button" class="btn btn-ghost btn-sm" onclick="resetPomodoro()">↺ Zerar</button>
-    </div>
-    <div class="pomodoro-stats">
-      <span>Hoje: <strong>${p.sessionsToday||0}</strong> 🍅</span>
-      <span>Foco: <strong>${p.totalMin||0}</strong> min</span>
-    </div>`;
-}
 function habitDoneToday(h){
   return !!(h.log&&h.log[todayStr()]);
 }
@@ -4712,7 +4546,7 @@ function saveGoal(){
 // ============================================================
 function renderAll(){
   renderTasks(); renderReminders(); renderAlarms(); renderAgenda(); renderNotes();
-  renderPomodoro(); renderHabits(); renderGoals(); renderKanban(); renderTranslator();
+  renderHabits(); renderGoals(); renderKanban(); renderTranslator();
   updateMetrics();
 }
 
@@ -5922,7 +5756,7 @@ function whatsappNotifyEnabled(type){
   const wa=state.whatsapp||{};
   if(!wa.enabled||!wa.phone||!wa.apiKey||isInvalidApiKey(wa.apiKey)) return false;
   if(String(type).includes('snooze')) return wa.snooze!==false;
-  const map={alarm:'alarms',reminder:'reminders',event:'events',task:'tasks',pomodoro:'pomodoro'};
+  const map={alarm:'alarms',reminder:'reminders',event:'events',task:'tasks'};
   const key=map[type]||'reminders';
   return wa[key]!==false;
 }
@@ -6631,7 +6465,7 @@ async function openWhatsAppSettings(){
         <div class="wa-hero-icon">📱</div>
         <div>
           <div class="wa-hero-title">WhatsApp</div>
-          <div class="wa-hero-sub">Alarmes, lembretes, agenda, tarefas e pomodoro</div>
+          <div class="wa-hero-sub">Alarmes, lembretes, agenda e tarefas</div>
         </div>
         <div class="wa-hero-badge ${connected?'show':''}" id="wa-hero-badge">● Conectado</div>
       </div>
@@ -6682,7 +6516,6 @@ async function openWhatsAppSettings(){
           <label class="wa-notify-item"><input type="checkbox" id="wa-notify-reminders" ${wa.reminders!==false?'checked':''}> Lembretes</label>
           <label class="wa-notify-item"><input type="checkbox" id="wa-notify-events" ${wa.events!==false?'checked':''}> Agenda</label>
           <label class="wa-notify-item"><input type="checkbox" id="wa-notify-tasks" ${wa.tasks!==false?'checked':''}> Tarefas</label>
-          <label class="wa-notify-item"><input type="checkbox" id="wa-notify-pomodoro" ${wa.pomodoro!==false?'checked':''}> Pomodoro</label>
           <label class="wa-notify-item"><input type="checkbox" id="wa-notify-snooze" ${wa.snooze!==false?'checked':''}> Soneca</label>
         </div>
       </div>
@@ -6727,7 +6560,6 @@ function readWhatsAppNotifyPrefs(){
     reminders:document.getElementById('wa-notify-reminders')?.checked!==false,
     events:document.getElementById('wa-notify-events')?.checked!==false,
     tasks:document.getElementById('wa-notify-tasks')?.checked!==false,
-    pomodoro:document.getElementById('wa-notify-pomodoro')?.checked!==false,
     snooze:document.getElementById('wa-notify-snooze')?.checked!==false,
   };
 }
@@ -7096,7 +6928,6 @@ const VIEW_SECTIONS = {
   'quick-strip': ['dashboard'],
   'metrics-grid': ['dashboard'],
   'clock-card': ['dashboard'],
-  'pomodoro-card': ['dashboard', 'productivity'],
   'habits-card': ['dashboard', 'productivity'],
   'goals-card': ['dashboard', 'productivity'],
   'kanban-card': ['dashboard', 'productivity', 'tasks'],
@@ -7115,7 +6946,7 @@ const VIEW_META = {
   reminders: { title:'Lembretes', sub:'Não perca nada importante' },
   agenda: { title:'Agenda', sub:'Calendário e compromissos' },
   notes: { title:'Bloco de Notas', sub:'Rascunhos e anotações rápidas — salva automaticamente' },
-  productivity: { title:'Produtividade', sub:'Pomodoro, hábitos, metas e Kanban' },
+  productivity: { title:'Produtividade', sub:'Hábitos, metas e Kanban' },
   translator: { title:'Tradutor', sub:'Tradução português ↔ inglês em tempo real' },
 };
 const VIEW_ACTIONS = {
@@ -7124,7 +6955,7 @@ const VIEW_ACTIONS = {
   reminders: '<button class="btn btn-primary btn-sm btn-add" onclick="openModal(\'reminder\')">Novo lembrete</button>',
   alarms: '<button class="btn btn-primary btn-sm btn-add" onclick="openModal(\'alarm\')">Novo alarme</button>',
   agenda: '<button class="btn btn-secondary btn-sm" onclick="syncOutlookCalendar(true)" title="Sincronizar Outlook">↻ Sincronizar</button><button class="btn btn-primary btn-sm btn-add" onclick="openModal(\'event\')">Novo evento</button>',
-  productivity: '<button class="btn btn-primary btn-sm" onclick="startPomodoro()">🍅 Iniciar Pomodoro</button><button class="btn btn-secondary btn-sm btn-add" onclick="openModal(\'habit\')">Hábito</button><button class="btn btn-secondary btn-sm btn-add" onclick="openModal(\'goal\')">Meta</button>',
+  productivity: '<button class="btn btn-primary btn-sm btn-add" onclick="openModal(\'habit\')">Hábito</button><button class="btn btn-secondary btn-sm btn-add" onclick="openModal(\'goal\')">Meta</button>',
   translator: '<button class="btn btn-primary btn-sm" onclick="runTranslation()">🌐 Traduzir</button><button class="btn btn-secondary btn-sm" onclick="swapTranslatorDir()">⇄ Inverter</button><button class="btn btn-soft btn-sm" onclick="copyTranslation()">📋 Copiar</button>',
 };
 
