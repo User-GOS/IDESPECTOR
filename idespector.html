@@ -3518,7 +3518,8 @@ function applyDailyVerseToDOM(verse){
   const textEl=document.getElementById('verse-text');
   const refEl=document.getElementById('verse-ref');
   const dateEl=document.getElementById('verse-date');
-  if(textEl) textEl.textContent=`"${verse.text}"`;
+  if(!textEl) return;
+  textEl.textContent=`"${verse.text}"`;
   if(refEl) refEl.textContent=verse.ref;
   if(dateEl) dateEl.textContent=formatVerseDateLabel();
   dailyVerseCache=verse;
@@ -3537,7 +3538,7 @@ async function loadDailyVerse(force=false){
 
   const local=getDailyVerse(today);
   applyDailyVerseToDOM(local);
-  lastRenderedVerseDate=today;
+  if(dailyVerseCache) lastRenderedVerseDate=today;
 
   if(!force){
     try{
@@ -4267,7 +4268,7 @@ async function fetchAiReply(userText){
     const errMsg=data?.error
       ||(res.status===503?'IA não configurada no servidor. Use ⚙ para colar sua chave OpenAI, ou peça OPENAI_API_KEY / GROQ_API_KEY na Vercel.')
       ||(res.status===404?'Rota /api/chat não encontrada. Atualize o deploy.')
-      :`Erro do servidor (${res.status}).`;
+      ||`Erro do servidor (${res.status}).`;
     throw new Error(errMsg);
   }
   return data.reply;
@@ -6415,6 +6416,7 @@ function renderAll(){
   renderTasks(); renderReminders(); renderAlarms(); renderAgenda(); renderNotes();
   renderHabits(); renderGoals(); renderKanban(); renderTranslator();
   renderDailyVerse();
+  loadWeather();
   renderDailyNews();
   updateMetrics();
   if(typeof renderAiChatMessages==='function') renderAiChatMessages();
@@ -9020,6 +9022,11 @@ document.addEventListener('keydown',e=>{
 // ============================================================
 // INIT
 // ============================================================
+function initDailyBrief(){
+  loadDailyVerse();
+  loadWeather();
+  loadDailyNews();
+}
 function bootstrapApp(){
   if(appBootstrapped) return;
   appBootstrapped=true;
@@ -9045,6 +9052,7 @@ function bootstrapApp(){
   startOutlookAutoSync();
   if(isOutlookConnected()||state.outlook?.icsUrl) setTimeout(()=>syncOutlookCalendar(false),1200);
   setView('dashboard', document.querySelector('.sidebar .nav-item.active'));
+  initDailyBrief();
   syncIntegrationMenu();
   recordWorkActivity();
   setTimeout(()=>showToast('🚀','IDespector ativo','Sistema inicializado com sucesso!'),800);
@@ -9057,8 +9065,8 @@ initColorTheme();
 initCyberAmbient();
 initPwa();
 initAuth();
-if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{ loadDailyVerse(); loadWeather(); loadDailyNews(); });
-else { loadDailyVerse(); loadWeather(); loadDailyNews(); }
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initDailyBrief);
+else initDailyBrief();
 </script>
 </body>
 </html>
