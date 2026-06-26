@@ -2359,16 +2359,6 @@
   .translator-phrases { display:flex; flex-wrap:wrap; gap:6px; }
   .translator-phrases .quick-btn { font-size:11px; }
   .translator-status { font-size:11px; color:var(--text-muted); min-height:16px; }
-  .translator-history { margin-top:4px; }
-  .translator-history-title { font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:.5px; }
-  .translator-history-item {
-    padding:10px 12px; border-radius:10px; margin-bottom:6px;
-    background:var(--bg-glass); border:1px solid var(--border);
-    font-size:12px; cursor:pointer; transition:border-color .15s;
-  }
-  .translator-history-item:hover { border-color:var(--border-bright); }
-  .translator-history-item .th-dir { font-size:10px; color:var(--accent-2); font-weight:600; margin-bottom:4px; }
-  .translator-history-item .th-text { color:var(--text-secondary); line-height:1.4; }
   .view-focused #translator-card { min-height:calc(100vh - 200px); }
   .view-focused .translator-editor { min-height:280px; }
   @media (max-width:900px){ .translator-grid { grid-template-columns:1fr; } }
@@ -2914,10 +2904,6 @@
           <span class="quick-btn" data-phrase="Bom dia, tudo bem?">Bom dia</span>
           <span class="quick-btn" data-phrase="Preciso de ajuda com este documento">Preciso de ajuda</span>
         </div>
-        <div class="translator-history" id="translator-history-wrap">
-          <div class="translator-history-title">Histórico recente</div>
-          <div id="translator-history"></div>
-        </div>
       </div>
     </div>
   </div>
@@ -3112,13 +3098,14 @@ function migrateGamification(){
 }
 function migrateTranslator(){
   if(!state.translator){
-    state.translator={dir:'pt-en',history:[]};
+    state.translator={dir:'pt-en'};
     save();
     return;
   }
-  if(state.translator.historyVersion!=='38'){
-    state.translator.history=[];
-    state.translator.historyVersion='38';
+  if(!state.translator.dir) state.translator.dir='pt-en';
+  if(state.translator.history||state.translator.historyVersion){
+    delete state.translator.history;
+    delete state.translator.historyVersion;
     save();
   }
 }
@@ -3354,7 +3341,7 @@ function createEmptyUserState(name){
     gamification:{xp:0,level:0,totalHabitsCompleted:0,perfectDays:0,perfectDaysLog:{},badges:[],gameCleared:false},
     pomodoro:{workMin:25,shortBreak:5,longBreak:15,phase:'idle',endsAt:null,sessionsToday:0,date:null,totalMin:0},
     productivityTab:'pomodoro',
-    translator:{dir:'pt-en',history:[],historyVersion:'38'},
+    translator:{dir:'pt-en'},
     appVersion:APP_VERSION,
   };
 }
@@ -6998,7 +6985,7 @@ function getViewSummary(view){
       :'📅 **Agenda** — nada para hoje. Diga "agendar reunião às 14h".',
     notes:`📝 **Notas** — ${(state.notes?.content||'').length} caractere(s) no bloco.`,
     productivity:`📊 **Produtividade** — ${state.pomodoro?.sessionsToday||0} pomodoro(s), ${state.habits?.filter(habitDoneToday).length||0}/${state.habits?.length||0} hábitos hoje, ${state.goals?.length||0} meta(s).`,
-    translator:`🌐 **Tradutor** — ${state.translator?.history?.length||0} tradução(ões) no histórico. Abra a aba Tradutor para PT ↔ EN.`,
+    translator:`🌐 **Tradutor** — PT ↔ EN. Abra a aba Tradutor para traduzir textos.`,
   };
   return map[view]||map.dashboard;
 }
@@ -7222,7 +7209,7 @@ function getTranslatorDir(){
 
 function setTranslatorDir(dir){
   if(dir!=='pt-en'&&dir!=='en-pt') return;
-  state.translator=state.translator||{dir:'pt-en',history:[]};
+  state.translator=state.translator||{dir:'pt-en'};
   state.translator.dir=dir;
   save();
   const card=document.getElementById('translator-card');
@@ -7341,42 +7328,9 @@ function insertTranslatorPhrase(text){
   if(!isPt&&dir!=='en-pt') setTranslatorDir('en-pt');
 }
 
-function pushTranslatorHistory(source,target,dir){
-  state.translator=state.translator||{dir,history:[]};
-  const entry={dir,source:source.slice(0,200),target:target.slice(0,200),at:Date.now()};
-  state.translator.history=[entry,...(state.translator.history||[])].slice(0,12);
-  save();
-  renderTranslatorHistory();
-}
-
-function renderTranslatorHistory(){
-  const el=document.getElementById('translator-history');
-  const wrap=document.getElementById('translator-history-wrap');
-  const hist=state.translator?.history||[];
-  if(wrap) wrap.style.display=hist.length?'':'none';
-  if(!el) return;
-  if(!hist.length){el.innerHTML='';return;}
-  const dirLabel=d=>d==='pt-en'?'PT → EN':'EN → PT';
-  el.innerHTML=hist.map((h,i)=>`<div class="translator-history-item" onclick="loadTranslatorHistory(${i})">
-    <div class="th-dir">${dirLabel(h.dir)} · ${new Date(h.at).toLocaleString('pt-BR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
-    <div class="th-text">${escHtml(h.source)} → ${escHtml(h.target)}</div>
-  </div>`).join('');
-}
-
-function loadTranslatorHistory(index){
-  const h=state.translator?.history?.[index];
-  if(!h) return;
-  setTranslatorDir(h.dir);
-  const input=document.getElementById('translator-input');
-  const output=document.getElementById('translator-output');
-  if(input) input.value=h.source;
-  if(output) output.value=h.target;
-}
-
 function renderTranslator(){
   migrateTranslator();
   setTranslatorDir(getTranslatorDir());
-  renderTranslatorHistory();
 }
 
 function splitTranslationChunks(text,max){
@@ -7478,7 +7432,6 @@ async function runTranslation(){
   try{
     const result=await translateText(text,langpair);
     if(output) output.value=result;
-    pushTranslatorHistory(text,result,dir);
     if(status) status.textContent=`Tradução concluída (${text.length} caractere${text.length!==1?'s':''}).`;
   }catch(e){
     const msg=e?.message==='file'
@@ -7529,7 +7482,6 @@ window.clearTranslatorInput=clearTranslatorInput;
 window.copyTranslation=copyTranslation;
 window.useTranslationAsInput=useTranslationAsInput;
 window.insertTranslatorPhrase=insertTranslatorPhrase;
-window.loadTranslatorHistory=loadTranslatorHistory;
 
 // ============================================================
 // NAV
