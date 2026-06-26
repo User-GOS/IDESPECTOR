@@ -345,7 +345,7 @@
   .dashboard-bento #agenda-card { min-height:0; }
   #row-kanban-main #kanban-card { min-height:0; }
   #row-kanban-main .card-body-scroll { max-height:380px; }
-  #verse-card, #news-card {
+  #verse-card, #news-card, #weather-card {
     min-height:auto !important;
     background:var(--bg-card);
     border-color:var(--border);
@@ -443,8 +443,47 @@
     margin-top:10px; flex-shrink:0; flex-wrap:wrap;
   }
   .news-feed-label { font-size:10px; color:var(--text-muted); font-weight:600; }
-  #row-daily-brief { grid-template-columns:1fr 1fr; }
+  .weather-card-body { padding:20px 22px 16px; display:flex; flex-direction:column; min-height:0; flex:1; }
+  .weather-card-head {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-bottom:12px; flex-shrink:0;
+  }
+  .weather-card-title {
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--text-muted); display:flex; align-items:center; gap:6px;
+  }
+  .weather-city { font-size:11px; color:var(--text-muted); font-weight:600; }
+  .weather-current {
+    display:flex; align-items:center; gap:14px; margin-bottom:14px;
+  }
+  .weather-icon-lg { font-size:44px; line-height:1; flex-shrink:0; }
+  .weather-temp { font-size:32px; font-weight:800; color:var(--text-primary); line-height:1; letter-spacing:-0.02em; }
+  .weather-desc { font-size:13px; font-weight:700; color:var(--accent-2); margin-top:4px; }
+  .weather-meta { font-size:11px; color:var(--text-muted); margin-top:4px; font-weight:600; }
+  .weather-forecast {
+    display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:6px;
+  }
+  .weather-day {
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:8px 4px; border-radius:var(--radius-sm);
+    background:var(--bg-elevated); border:1px solid var(--border);
+    text-align:center; min-width:0;
+  }
+  .weather-day-name { font-size:9px; font-weight:800; text-transform:uppercase; color:var(--text-muted); letter-spacing:.04em; }
+  .weather-day-icon { font-size:18px; line-height:1; }
+  .weather-day-temps { font-size:10px; font-weight:700; color:var(--text-primary); white-space:nowrap; }
+  .weather-day-temps span { color:var(--text-muted); font-weight:600; }
+  .weather-loading { font-size:13px; color:var(--text-muted); font-style:italic; padding:8px 0; }
+  .weather-foot {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-top:10px; flex-shrink:0; flex-wrap:wrap;
+  }
+  #row-daily-brief { grid-template-columns:1fr 1fr 1fr; }
+  @media (max-width:1100px) { #row-daily-brief { grid-template-columns:1fr 1fr; } }
   @media (max-width:900px) { #row-daily-brief { grid-template-columns:1fr; } }
+  @media (max-width:480px) {
+    .weather-forecast { grid-template-columns:repeat(5, minmax(52px, 1fr)); overflow-x:auto; padding-bottom:2px; }
+  }
   #row-agenda-habits #agenda-card { min-height:0; }
   #row-agenda-habits #habits-card { min-height:0; }
   .card-body-scroll {
@@ -2196,7 +2235,7 @@
     .header-actions { gap:6px; }
     .card-header { flex-wrap:wrap; gap:8px; }
     .card-title { font-size:13px; }
-    .verse-card-body, .news-card-body { padding:14px 16px 12px; }
+    .verse-card-body, .news-card-body, .weather-card-body { padding:14px 16px 12px; }
     .mobile-nav-item { font-size:9px; }
     .mobile-nav-item svg { width:18px; height:18px; }
   }
@@ -2984,6 +3023,30 @@
         </div>
       </div>
     </div>
+    <div class="card" id="weather-card">
+      <div class="weather-card-body">
+        <div class="weather-card-head">
+          <div class="weather-card-title"><span aria-hidden="true">🌤️</span> Previsão do tempo</div>
+          <span class="weather-city" id="weather-city">São Paulo, SP</span>
+        </div>
+        <p class="weather-loading" id="weather-status">Carregando previsão...</p>
+        <div id="weather-showcase" hidden>
+          <div class="weather-current">
+            <span class="weather-icon-lg" id="weather-icon" aria-hidden="true">⛅</span>
+            <div>
+              <div class="weather-temp" id="weather-temp">—°</div>
+              <div class="weather-desc" id="weather-desc">—</div>
+              <div class="weather-meta" id="weather-meta">—</div>
+            </div>
+          </div>
+          <div class="weather-forecast" id="weather-forecast" role="list"></div>
+        </div>
+        <div class="weather-foot">
+          <span class="news-feed-label" id="weather-source">Open-Meteo</span>
+          <button type="button" class="btn btn-soft btn-sm" onclick="loadWeather(true)">↻ Atualizar</button>
+        </div>
+      </div>
+    </div>
     <div class="card" id="news-card">
       <div class="news-card-body">
         <div class="news-card-head">
@@ -3666,6 +3729,160 @@ function renderDailyNews(){
   loadDailyNews();
 }
 window.loadDailyNews=loadDailyNews;
+
+let lastRenderedWeatherDate=null;
+let weatherCache=null;
+const WEATHER_CODES={
+  0:{label:'Céu limpo',icon:'☀️'},1:{label:'Predom. limpo',icon:'🌤️'},2:{label:'Parcial. nublado',icon:'⛅'},
+  3:{label:'Nublado',icon:'☁️'},45:{label:'Neblina',icon:'🌫️'},48:{label:'Neblina',icon:'🌫️'},
+  51:{label:'Garoa leve',icon:'🌦️'},53:{label:'Garoa',icon:'🌦️'},55:{label:'Garoa forte',icon:'🌧️'},
+  61:{label:'Chuva fraca',icon:'🌧️'},63:{label:'Chuva',icon:'🌧️'},65:{label:'Chuva forte',icon:'🌧️'},
+  80:{label:'Pancadas leves',icon:'🌦️'},81:{label:'Pancadas',icon:'🌦️'},82:{label:'Pancadas fortes',icon:'⛈️'},
+  95:{label:'Tempestade',icon:'⛈️'},96:{label:'Tempestade c/ granizo',icon:'⛈️'},99:{label:'Tempestade c/ granizo',icon:'⛈️'},
+};
+function weatherFromCode(code){
+  return WEATHER_CODES[code]||{label:'Tempo variável',icon:'🌡️'};
+}
+function weatherDayLabel(isoDate,index){
+  if(index===0) return 'Hoje';
+  const p=isoDate.split('-').map(Number);
+  const name=new Date(p[0],p[1]-1,p[2]).toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+  return name.charAt(0).toUpperCase()+name.slice(1);
+}
+function parseWeatherOpenMeteo(data){
+  const cur=data.current||{};
+  const daily=data.daily||{};
+  const dates=daily.time||[];
+  const wInfo=weatherFromCode(cur.weather_code);
+  return {
+    city:'São Paulo, SP',
+    date:dates[0]||todayStr(),
+    source:'Open-Meteo',
+    current:{
+      temp:Math.round(cur.temperature_2m??0),
+      humidity:Math.round(cur.relative_humidity_2m??0),
+      windKmh:Math.round(cur.wind_speed_10m??0),
+      code:cur.weather_code,
+      label:wInfo.label,
+      icon:wInfo.icon,
+    },
+    daily:dates.map((date,i)=>{
+      const info=weatherFromCode(daily.weather_code?.[i]);
+      return {
+        date,day:weatherDayLabel(date,i),
+        max:Math.round(daily.temperature_2m_max?.[i]??0),
+        min:Math.round(daily.temperature_2m_min?.[i]??0),
+        code:daily.weather_code?.[i],
+        label:info.label,icon:info.icon,
+      };
+    }),
+  };
+}
+function buildWeatherForecastHtml(days){
+  return (days||[]).map(d=>`<div class="weather-day" role="listitem" title="${d.label}">
+    <span class="weather-day-name">${d.day}</span>
+    <span class="weather-day-icon" aria-hidden="true">${d.icon}</span>
+    <span class="weather-day-temps">${d.max}° <span>/ ${d.min}°</span></span>
+  </div>`).join('');
+}
+function applyWeatherToDOM(payload){
+  const statusEl=document.getElementById('weather-status');
+  const showcase=document.getElementById('weather-showcase');
+  const forecastEl=document.getElementById('weather-forecast');
+  const cityEl=document.getElementById('weather-city');
+  const sourceEl=document.getElementById('weather-source');
+  if(!statusEl||!showcase) return;
+  const cur=payload?.current;
+  if(!cur){
+    showcase.hidden=true;
+    statusEl.hidden=false;
+    statusEl.textContent='Previsão indisponível no momento.';
+    return;
+  }
+  weatherCache=payload;
+  document.getElementById('weather-icon').textContent=cur.icon||'🌡️';
+  document.getElementById('weather-temp').textContent=`${cur.temp}°`;
+  document.getElementById('weather-desc').textContent=cur.label||'—';
+  document.getElementById('weather-meta').textContent=`Umidade ${cur.humidity}% · Vento ${cur.windKmh} km/h`;
+  if(cityEl) cityEl.textContent=payload.city||'São Paulo, SP';
+  if(forecastEl) forecastEl.innerHTML=buildWeatherForecastHtml(payload.daily);
+  if(sourceEl) sourceEl.textContent=payload.source?`Fonte: ${payload.source}`:'Open-Meteo';
+  statusEl.hidden=true;
+  showcase.hidden=false;
+}
+async function fetchWeatherFromApi(){
+  const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+  const timer=ctrl?setTimeout(()=>ctrl.abort(),12000):null;
+  const res=await fetch('/api/weather/daily',ctrl?{signal:ctrl.signal,cache:'no-store'}:{cache:'no-store'});
+  if(timer) clearTimeout(timer);
+  const data=await res.json();
+  if(!res.ok||!data.ok) throw new Error(data?.error||'Falha na API');
+  return data;
+}
+async function fetchWeatherDirect(){
+  const url='https://api.open-meteo.com/v1/forecast?latitude=-23.5505&longitude=-46.6333&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo&forecast_days=5';
+  const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+  const timer=ctrl?setTimeout(()=>ctrl.abort(),12000):null;
+  const res=await fetch(url,ctrl?{signal:ctrl.signal}:{});
+  if(timer) clearTimeout(timer);
+  if(!res.ok) throw new Error('Open-Meteo indisponível');
+  const raw=await res.json();
+  return parseWeatherOpenMeteo(raw);
+}
+function weatherCacheKey(dateStr=todayStr()){
+  return 'idespector-weather-v1-'+dateStr;
+}
+function weatherOfflineMessage(){
+  if(location.protocol==='file:') return `Abra pelo servidor: ${SERVER_URL}`;
+  return 'Não foi possível carregar a previsão. Toque em Atualizar.';
+}
+async function loadWeather(force=false){
+  const today=todayStr();
+  const statusEl=document.getElementById('weather-status');
+  const showcase=document.getElementById('weather-showcase');
+  if(!statusEl) return;
+  if(!force&&lastRenderedWeatherDate===today&&weatherCache?.current){
+    applyWeatherToDOM(weatherCache);
+    return;
+  }
+  if(!force){
+    try{
+      const cached=localStorage.getItem(weatherCacheKey(today));
+      if(cached){
+        const data=JSON.parse(cached);
+        if(data?.current){
+          applyWeatherToDOM(data);
+          lastRenderedWeatherDate=today;
+          return;
+        }
+      }
+    }catch(_){}
+  }
+  if(location.protocol==='file:'){
+    if(showcase) showcase.hidden=true;
+    statusEl.hidden=false;
+    statusEl.textContent=weatherOfflineMessage();
+    return;
+  }
+  if(showcase) showcase.hidden=true;
+  statusEl.hidden=false;
+  statusEl.textContent='Carregando previsão...';
+  try{
+    let payload=null;
+    try{ payload=await fetchWeatherFromApi(); }
+    catch(_){ payload=await fetchWeatherDirect(); }
+    if(!payload?.current) throw new Error('Sem previsão');
+    applyWeatherToDOM(payload);
+    lastRenderedWeatherDate=today;
+    try{localStorage.setItem(weatherCacheKey(today),JSON.stringify(payload));}catch(_){}
+  }catch(_){
+    if(showcase) showcase.hidden=true;
+    statusEl.hidden=false;
+    statusEl.textContent=weatherOfflineMessage();
+  }
+}
+window.loadWeather=loadWeather;
+
 function copyDailyVerse(){
   const verse=dailyVerseCache||getDailyVerse();
   const text=`"${verse.text}" — ${verse.ref}`;
@@ -4512,6 +4729,7 @@ function updateClock(){
   document.getElementById('greeting-main').innerHTML=`<span>${gr}${name}</span>`;
   document.getElementById('greeting-tag').textContent=new Date().toLocaleString('pt-BR',{weekday:'long'}).replace(/^\w/,c=>c.toUpperCase());
   if(lastRenderedVerseDate!==todayStr()) loadDailyVerse();
+  if(lastRenderedWeatherDate!==todayStr()) loadWeather();
   checkAlarms(now);
   checkInactivityPeriod();
   checkWorkSessionBreak();
@@ -8286,6 +8504,7 @@ const VIEW_SECTIONS = {
   'quick-strip': ['dashboard'],
   'metrics-grid': ['dashboard'],
   'verse-card': ['dashboard'],
+  'weather-card': ['dashboard'],
   'news-card': ['dashboard'],
   'kanban-card': ['dashboard', 'productivity', 'tasks'],
   'habits-card': ['dashboard', 'productivity'],
@@ -8366,7 +8585,7 @@ function setView(view, el){
     content.classList.remove('view-panel');
     void content.offsetWidth;
     content.classList.add('view-panel');
-    if(view==='dashboard'){ loadDailyVerse(); loadDailyNews(); }
+    if(view==='dashboard'){ loadDailyVerse(); loadWeather(); loadDailyNews(); }
     animateDashboardBlocks();
   }
 
@@ -8458,8 +8677,8 @@ initTranslator();
 initCyberAmbient();
 initPwa();
 initAuth();
-if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{ loadDailyVerse(); loadDailyNews(); });
-else { loadDailyVerse(); loadDailyNews(); }
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{ loadDailyVerse(); loadWeather(); loadDailyNews(); });
+else { loadDailyVerse(); loadWeather(); loadDailyNews(); }
 </script>
 </body>
 </html>

@@ -18,6 +18,7 @@ Write-Host "Telegram API: POST http://localhost:$Port/api/telegram/send"
 Write-Host "Tradutor API: GET http://localhost:$Port/api/translate?q=ola&langpair=pt|en"
 Write-Host "Outlook ICS: POST http://localhost:$Port/api/outlook/ics"
 Write-Host "Noticias: GET http://localhost:$Port/api/news/daily"
+Write-Host "Tempo: GET http://localhost:$Port/api/weather/daily"
 Write-Host "Pressione Ctrl+C para parar."
 
 function Add-CorsHeaders($response) {
@@ -327,6 +328,72 @@ while ($listener.IsListening) {
                 Send-Json $response 200 $newsResult
             } else {
                 Send-Json $response 502 @{ ok = $false; error = "Nenhuma fonte de noticias disponivel" }
+            }
+            continue
+        }
+
+        if ($path -eq "/api/weather/daily" -and $request.HttpMethod -eq "GET") {
+            try {
+                $wUrl = "https://api.open-meteo.com/v1/forecast?latitude=-23.5505&longitude=-46.6333&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo&forecast_days=5"
+                $raw = Invoke-RestMethod -Uri $wUrl -TimeoutSec 12 -Headers @{ "User-Agent" = "IDespector/1.0" }
+                $codes = @{
+                    0 = @{ label = "Ceu limpo"; icon = "☀️" }
+                    1 = @{ label = "Predom. limpo"; icon = "🌤️" }
+                    2 = @{ label = "Parcial. nublado"; icon = "⛅" }
+                    3 = @{ label = "Nublado"; icon = "☁️" }
+                    45 = @{ label = "Neblina"; icon = "🌫️" }
+                    48 = @{ label = "Neblina"; icon = "🌫️" }
+                    51 = @{ label = "Garoa leve"; icon = "🌦️" }
+                    53 = @{ label = "Garoa"; icon = "🌦️" }
+                    55 = @{ label = "Garoa forte"; icon = "🌧️" }
+                    61 = @{ label = "Chuva fraca"; icon = "🌧️" }
+                    63 = @{ label = "Chuva"; icon = "🌧️" }
+                    65 = @{ label = "Chuva forte"; icon = "🌧️" }
+                    80 = @{ label = "Pancadas leves"; icon = "🌦️" }
+                    81 = @{ label = "Pancadas"; icon = "🌦️" }
+                    82 = @{ label = "Pancadas fortes"; icon = "⛈️" }
+                    95 = @{ label = "Tempestade"; icon = "⛈️" }
+                }
+                function Get-WeatherInfo([int]$code) {
+                    if ($codes.ContainsKey($code)) { return $codes[$code] }
+                    return @{ label = "Tempo variavel"; icon = "🌡️" }
+                }
+                $curInfo = Get-WeatherInfo ([int]$raw.current.weather_code)
+                $today = [string]$raw.daily.time[0]
+                $daily = @()
+                for ($i = 0; $i -lt $raw.daily.time.Count; $i++) {
+                    $d = [string]$raw.daily.time[$i]
+                    $info = Get-WeatherInfo ([int]$raw.daily.weather_code[$i])
+                    $dayName = if ($i -eq 0) { "Hoje" } else {
+                        ([datetime]::ParseExact($d, "yyyy-MM-dd", $null)).ToString("ddd", [System.Globalization.CultureInfo]::GetCultureInfo("pt-BR")).Replace(".", "")
+                    }
+                    $daily += @{
+                        date = $d
+                        day = $dayName
+                        max = [math]::Round([double]$raw.daily.temperature_2m_max[$i])
+                        min = [math]::Round([double]$raw.daily.temperature_2m_min[$i])
+                        code = [int]$raw.daily.weather_code[$i]
+                        label = $info.label
+                        icon = $info.icon
+                    }
+                }
+                Send-Json $response 200 @{
+                    ok = $true
+                    city = "Sao Paulo, SP"
+                    date = $today
+                    source = "Open-Meteo"
+                    current = @{
+                        temp = [math]::Round([double]$raw.current.temperature_2m)
+                        humidity = [math]::Round([double]$raw.current.relative_humidity_2m)
+                        windKmh = [math]::Round([double]$raw.current.wind_speed_10m)
+                        code = [int]$raw.current.weather_code
+                        label = $curInfo.label
+                        icon = $curInfo.icon
+                    }
+                    daily = $daily
+                }
+            } catch {
+                Send-Json $response 502 @{ ok = $false; error = "Erro ao buscar previsao do tempo" }
             }
             continue
         }
