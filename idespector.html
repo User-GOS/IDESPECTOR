@@ -1517,6 +1517,78 @@
     animation:gradientFlow 3s ease infinite, alarmTimeGlow 2s ease infinite;
   }
 
+  /* ALERTA DE SAÚDE — pausa 4h / inatividade */
+  .alarm-overlay.health-mode {
+    animation:alarmOverlayIn .45s cubic-bezier(.34,1.2,.64,1), healthBgPulse 1.6s ease-in-out .45s infinite;
+  }
+  @keyframes healthBgPulse {
+    0%,100% { filter:brightness(1); }
+    50% { filter:brightness(1.14); }
+  }
+  .alarm-overlay.health-mode .alarm-flash-bar {
+    height:10px;
+    background:linear-gradient(90deg, #38bdf8, #2563eb, #22d3ee, #38bdf8);
+    background-size:300% 100%;
+    animation:alarmFlashBar .55s linear infinite;
+    box-shadow:0 0 28px rgba(56,189,248,0.65);
+  }
+  .alarm-overlay.health-mode .alarm-content {
+    animation:alarmPopIn .5s cubic-bezier(.22,1.3,.36,1), healthCardPulse 2s ease-in-out .5s infinite;
+    border-color:rgba(56,189,248,0.35);
+    box-shadow:0 0 0 1px rgba(56,189,248,0.12) inset, 0 32px 100px rgba(0,0,0,0.85), 0 0 120px rgba(37,99,235,0.25);
+  }
+  @keyframes healthCardPulse {
+    0%,100% { transform:scale(1); box-shadow:0 0 0 1px rgba(56,189,248,0.12) inset, 0 32px 100px rgba(0,0,0,0.85), 0 0 80px rgba(37,99,235,0.2); }
+    50% { transform:scale(1.02); box-shadow:0 0 0 1px rgba(56,189,248,0.2) inset, 0 36px 110px rgba(0,0,0,0.9), 0 0 140px rgba(56,189,248,0.35); }
+  }
+  .alarm-overlay.health-mode .alarm-badge {
+    background:rgba(56,189,248,0.18); border-color:rgba(56,189,248,0.55); color:#bae6fd;
+    animation:healthBadgePulse 1.2s ease infinite;
+    box-shadow:0 0 28px rgba(56,189,248,0.4);
+  }
+  @keyframes healthBadgePulse {
+    0%,100% { transform:scale(1); box-shadow:0 0 24px rgba(56,189,248,0.35); }
+    50% { transform:scale(1.08); box-shadow:0 0 40px rgba(56,189,248,0.65); }
+  }
+  .alarm-overlay.health-mode .alarm-display-time {
+    font-size:clamp(72px, 18vmin, 120px);
+    background:linear-gradient(135deg, #e0f2fe 0%, #38bdf8 30%, #2563eb 70%, #1d4ed8 100%);
+    background-size:300% 300%;
+    -webkit-background-clip:text; background-clip:text;
+    animation:gradientFlow 2.5s ease infinite, alarmTimeGlow 1.8s ease infinite;
+  }
+  .alarm-overlay.health-mode .alarm-display-label {
+    font-size:clamp(20px, 4vmin, 28px); font-weight:700; color:#f0f9ff;
+    margin-top:8px; line-height:1.35;
+  }
+  .alarm-overlay.health-mode .alarm-display-sub {
+    font-size:clamp(14px, 2.5vmin, 17px); color:#94a3b8; margin-top:12px; line-height:1.55;
+    max-width:420px; margin-left:auto; margin-right:auto;
+  }
+  .alarm-overlay.health-mode .alarm-dismiss-btn {
+    font-size:15px; padding:14px 28px; min-width:200px;
+    box-shadow:0 0 32px rgba(37,99,235,0.45);
+  }
+  .alarm-overlay.inactivity-mode .alarm-flash-bar {
+    background:linear-gradient(90deg, #fbbf24, #f59e0b, #fcd34d, #fbbf24);
+    box-shadow:0 0 28px rgba(251,191,36,0.55);
+  }
+  .alarm-overlay.inactivity-mode .alarm-badge {
+    background:rgba(251,191,36,0.18); border-color:rgba(251,191,36,0.55); color:#fde68a;
+    box-shadow:0 0 28px rgba(251,191,36,0.35);
+    animation:reminderBadgePulse 1.2s ease infinite;
+  }
+  .alarm-overlay.inactivity-mode .alarm-display-time {
+    background:linear-gradient(135deg, #fef3c7 0%, #fbbf24 40%, #f59e0b 80%, #fcd34d 100%);
+    background-size:300% 300%;
+    -webkit-background-clip:text; background-clip:text;
+    animation:gradientFlow 2.5s ease infinite, alarmTimeGlow 1.8s ease infinite;
+  }
+  .alarm-overlay.inactivity-mode .alarm-content {
+    border-color:rgba(251,191,36,0.3);
+    box-shadow:0 0 0 1px rgba(251,191,36,0.1) inset, 0 32px 100px rgba(0,0,0,0.85), 0 0 100px rgba(251,191,36,0.15);
+  }
+
   /* FOCUS MODE */
   .focus-overlay {
     position:fixed; inset:0; z-index:150;
@@ -3897,7 +3969,6 @@ function testWorkBreakAlert(){
     'health-test',
     'test-'+ws.lastAlertCycle
   );
-  showToast('🧪','Teste','Alerta de pausa de 4 horas enviado.');
 }
 function saveInactivitySettings(){
   const ws=ensureWorkSession();
@@ -4202,6 +4273,94 @@ function spawnAlarmParticles(){
   }
 }
 
+function playHealthChime(){
+  const ctx=getAudioCtx();
+  if(!ctx) return;
+  if(ctx.state==='suspended') ctx.resume();
+  const t0=ctx.currentTime;
+  [523,659,784].forEach((freq,i)=>playTone(ctx,freq,t0+i*0.16,0.28,'sine',0.42));
+  playTone(ctx,988,t0+0.55,0.35,'sine',0.38);
+}
+
+function startHealthAlertSound(){
+  stopAlarmSound();
+  unlockAudio();
+  try{
+    playHealthChime();
+    alarmSoundTimer=setInterval(playHealthChime,2800);
+  }catch(e){ console.warn('Alerta saúde: áudio indisponível',e); }
+}
+
+function startHealthTitleFlash(title){
+  stopAlarmTitleFlash();
+  let on=false;
+  const clean=String(title||'').replace(/\s*\(teste\)\s*/gi,'').trim();
+  const flash=`💧 ${clean}`;
+  alarmTitleTimer=setInterval(()=>{
+    document.title=on?ALARM_TITLE_BASE:flash;
+    on=!on;
+  },550);
+}
+
+function triggerHealthAlert(type,title,body){
+  const overlay=document.getElementById('alarm-overlay');
+  const badge=document.getElementById('alarm-badge');
+  const snoozeBtn=document.getElementById('alarm-snooze-btn');
+  const dismissBtn=document.getElementById('alarm-dismiss-btn');
+  const isInactivity=type==='inactivity';
+  const cleanTitle=String(title||'').replace(/\s*\(teste\)\s*/gi,'').trim();
+  activeAlertType=type;
+  activeAlert={type,title:cleanTitle,body};
+  closeModal();
+  spawnAlarmParticles();
+  if(badge){
+    badge.innerHTML=isInactivity
+      ?'<span aria-hidden="true">😴</span> PERÍODO DE INATIVIDADE'
+      :'<span aria-hidden="true">💧</span> PAUSA RECOMENDADA';
+  }
+  const timeEl=document.getElementById('alarm-display-time');
+  if(timeEl) timeEl.textContent=isInactivity?'⏸':'4h';
+  document.getElementById('alarm-display-label').textContent=cleanTitle;
+  document.getElementById('alarm-display-sub').textContent=body;
+  if(snoozeBtn){
+    snoozeBtn.style.display=isInactivity?'none':'';
+    snoozeBtn.textContent='⏰ Lembrar em 30 min';
+    snoozeBtn.onclick=()=>snoozeHealthAlert(30);
+  }
+  if(dismissBtn){
+    dismissBtn.textContent=isInactivity?'✓ Retomar foco':'✓ Fiz a pausa, obrigado';
+    dismissBtn.onclick=()=>{
+      dismissAlarm();
+      if(isInactivity){
+        exitInactivity();
+        recordWorkActivity();
+        updateWorkStatusUI();
+      }
+    };
+  }
+  overlay?.classList.remove('reminder-mode');
+  overlay?.classList.toggle('health-mode',true);
+  overlay?.classList.toggle('inactivity-mode',isInactivity);
+  overlay?.classList.add('active');
+  document.body.classList.add('alarm-ringing');
+  enterAlarmScreenMode();
+  startHealthAlertSound();
+  startHealthTitleFlash(cleanTitle);
+  if(navigator.vibrate) navigator.vibrate([500,180,500,180,500]);
+  showBrowserNotification(cleanTitle,body);
+  setTimeout(()=>document.querySelector('.alarm-dismiss-btn')?.focus(),200);
+}
+
+function snoozeHealthAlert(mins=30){
+  const item=activeAlert;
+  dismissAlarm();
+  showToast('⏰','Lembrete agendado',`Pausa recomendada em ${mins} minutos.`);
+  if(alertSnoozeTimer) clearTimeout(alertSnoozeTimer);
+  alertSnoozeTimer=setTimeout(()=>{
+    if(item?.title&&item?.body) triggerHealthAlert(item.type||'work-break',item.title,item.body);
+  },mins*60000);
+}
+
 function showAlertOverlay(type,time,label,sub){
   const overlay=document.getElementById('alarm-overlay');
   const badge=document.getElementById('alarm-badge');
@@ -4214,8 +4373,16 @@ function showAlertOverlay(type,time,label,sub){
   document.getElementById('alarm-display-time').textContent=time;
   document.getElementById('alarm-display-label').textContent=label;
   document.getElementById('alarm-display-sub').textContent=sub;
-  if(snoozeBtn) snoozeBtn.style.display='';
-  if(dismissBtn) dismissBtn.textContent=type==='reminder'?'✓ Entendi':'✓ Despertar';
+  if(snoozeBtn){
+    snoozeBtn.style.display='';
+    snoozeBtn.textContent='😴 Soneca 5 min';
+    snoozeBtn.onclick=()=>snoozeAlert(5);
+  }
+  if(dismissBtn){
+    dismissBtn.textContent=type==='reminder'?'✓ Entendi':'✓ Despertar';
+    dismissBtn.onclick=()=>dismissAlarm();
+  }
+  overlay?.classList.remove('health-mode','inactivity-mode');
   overlay?.classList.toggle('reminder-mode',type==='reminder');
   overlay?.classList.add('active');
   document.body.classList.add('alarm-ringing');
@@ -4248,7 +4415,18 @@ function dismissAlarm(){
   stopAlarmTitleFlash();
   if(alertSnoozeTimer){ clearTimeout(alertSnoozeTimer); alertSnoozeTimer=null; }
   const overlay=document.getElementById('alarm-overlay');
-  overlay?.classList.remove('active','reminder-mode');
+  const snoozeBtn=document.getElementById('alarm-snooze-btn');
+  const dismissBtn=document.getElementById('alarm-dismiss-btn');
+  overlay?.classList.remove('active','reminder-mode','health-mode','inactivity-mode');
+  if(snoozeBtn){
+    snoozeBtn.style.display='';
+    snoozeBtn.textContent='😴 Soneca 5 min';
+    snoozeBtn.onclick=()=>snoozeAlert(5);
+  }
+  if(dismissBtn){
+    dismissBtn.textContent='✓ Despertar';
+    dismissBtn.onclick=()=>dismissAlarm();
+  }
   document.body.classList.remove('alarm-ringing');
   document.getElementById('alarm-particles')?.replaceChildren();
   exitAlarmScreenMode();
@@ -6144,7 +6322,11 @@ function whatsappNotifyEnabled(type){
 }
 
 async function notifyUser(icon,title,body,type,id,timeKey){
-  showToast(icon,title,body);
+  if(type==='work-break'||type==='inactivity'||String(type).startsWith('work-break')){
+    triggerHealthAlert(type,title,body);
+  }else{
+    showToast(icon,title,body);
+  }
   const key=`${type}-${id}-${timeKey}`;
   let sent=false;
 
