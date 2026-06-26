@@ -3860,8 +3860,44 @@ function openInactivitySettings(){
       ${selectOptions('ws-inactivity-min',INACTIVITY_OPTIONS.map(m=>({value:String(m),label:`${m} minutos`})),String(mins))}
     </div>
     <div class="form-hint">Foco acumulado agora: <strong>${elapsed}</strong> · alerta de pausa a cada <strong>4 horas</strong> ativas.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <button type="button" class="btn btn-soft btn-sm" onclick="testInactivityAlert()" style="flex:1;min-width:140px">🧪 Testar inatividade</button>
+      <button type="button" class="btn btn-soft btn-sm" onclick="testWorkBreakAlert()" style="flex:1;min-width:140px">🧪 Testar pausa 4h</button>
+    </div>
     <button type="button" class="btn btn-primary" onclick="saveInactivitySettings()" style="width:100%;justify-content:center;margin-top:14px">Salvar</button>`;
   document.getElementById('modal-overlay').classList.add('open');
+}
+function testInactivityAlert(){
+  const ws=ensureWorkSession();
+  if(!ws.enabled){
+    showToast('⚠️','Teste','Ative o monitor de foco nas configurações acima.');
+    return;
+  }
+  if(ws.isInactive) exitInactivity();
+  const inactivityMs=getInactivityMs(ws);
+  const now=Date.now();
+  ws.lastActivity=now-inactivityMs-2000;
+  if(!ws.segmentStart) ws.segmentStart=ws.lastActivity;
+  enterInactivity(now);
+  updateWorkStatusUI();
+}
+function testWorkBreakAlert(){
+  const ws=ensureWorkSession();
+  if(!ws.enabled){
+    showToast('⚠️','Teste','Ative o monitor de foco nas configurações acima.');
+    return;
+  }
+  ws.lastAlertCycle=(ws.lastAlertCycle||0)+1;
+  const tip=WORK_BREAK_TIPS[Math.floor(Math.random()*WORK_BREAK_TIPS.length)];
+  notifyUser(
+    '💧',
+    '4 horas de foco contínuo! (teste)',
+    `Você está trabalhando há 4 horas seguidas. ${tip}`,
+    'work-break',
+    'health-test',
+    'test-'+ws.lastAlertCycle
+  );
+  showToast('🧪','Teste','Alerta de pausa de 4 horas enviado.');
 }
 function saveInactivitySettings(){
   const ws=ensureWorkSession();
