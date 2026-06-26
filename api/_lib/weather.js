@@ -31,8 +31,16 @@ const WEATHER_CODES = {
   99: { label: 'Tempestade c/ granizo', icon: '⛈️' },
 };
 
-function weatherFromCode(code) {
-  return WEATHER_CODES[code] || { label: 'Tempo variável', icon: '🌡️' };
+function weatherFromCode(code, isDay = true) {
+  const base = WEATHER_CODES[code] || { label: 'Tempo variável', icon: '🌡️' };
+  if (isDay !== 0 && isDay !== false) return base;
+  const nightMap = {
+    0: { label: 'Noite limpa', icon: '🌙' },
+    1: { label: 'Noite limpa', icon: '🌙' },
+    2: { label: 'Parcial. nublado', icon: '☁️' },
+    3: { label: 'Nublado', icon: '☁️' },
+  };
+  return nightMap[code] || base;
 }
 
 function dayLabel(isoDate, index) {
@@ -46,7 +54,8 @@ function parseOpenMeteo(data) {
   const cur = data.current || {};
   const daily = data.daily || {};
   const dates = daily.time || [];
-  const wInfo = weatherFromCode(cur.weather_code);
+  const isDay = cur.is_day;
+  const wInfo = weatherFromCode(cur.weather_code, isDay);
   const today = dates[0] || new Date().toISOString().slice(0, 10);
 
   return {
@@ -58,6 +67,7 @@ function parseOpenMeteo(data) {
       humidity: Math.round(cur.relative_humidity_2m ?? 0),
       windKmh: Math.round(cur.wind_speed_10m ?? 0),
       code: cur.weather_code,
+      isDay: isDay !== 0,
       label: wInfo.label,
       icon: wInfo.icon,
     },
@@ -80,7 +90,7 @@ async function fetchWeatherForecast() {
   const url = new URL('https://api.open-meteo.com/v1/forecast');
   url.searchParams.set('latitude', String(SAO_PAULO.lat));
   url.searchParams.set('longitude', String(SAO_PAULO.lon));
-  url.searchParams.set('current', 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m');
+  url.searchParams.set('current', 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day');
   url.searchParams.set('daily', 'weather_code,temperature_2m_max,temperature_2m_min');
   url.searchParams.set('timezone', 'America/Sao_Paulo');
   url.searchParams.set('forecast_days', '5');

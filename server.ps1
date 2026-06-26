@@ -334,7 +334,7 @@ while ($listener.IsListening) {
 
         if ($path -eq "/api/weather/daily" -and $request.HttpMethod -eq "GET") {
             try {
-                $wUrl = "https://api.open-meteo.com/v1/forecast?latitude=-23.5505&longitude=-46.6333&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo&forecast_days=5"
+                $wUrl = "https://api.open-meteo.com/v1/forecast?latitude=-23.5505&longitude=-46.6333&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo&forecast_days=5"
                 $raw = Invoke-RestMethod -Uri $wUrl -TimeoutSec 12 -Headers @{ "User-Agent" = "IDespector/1.0" }
                 $codes = @{
                     0 = @{ label = "Ceu limpo"; icon = "☀️" }
@@ -354,11 +354,20 @@ while ($listener.IsListening) {
                     82 = @{ label = "Pancadas fortes"; icon = "⛈️" }
                     95 = @{ label = "Tempestade"; icon = "⛈️" }
                 }
-                function Get-WeatherInfo([int]$code) {
+                function Get-WeatherInfo([int]$code, [int]$isDay) {
+                    if ($isDay -eq 0) {
+                        $night = @{
+                            0 = @{ label = "Noite limpa"; icon = "🌙" }
+                            1 = @{ label = "Noite limpa"; icon = "🌙" }
+                            2 = @{ label = "Parcial. nublado"; icon = "☁️" }
+                            3 = @{ label = "Nublado"; icon = "☁️" }
+                        }
+                        if ($night.ContainsKey($code)) { return $night[$code] }
+                    }
                     if ($codes.ContainsKey($code)) { return $codes[$code] }
                     return @{ label = "Tempo variavel"; icon = "🌡️" }
                 }
-                $curInfo = Get-WeatherInfo ([int]$raw.current.weather_code)
+                $curInfo = Get-WeatherInfo ([int]$raw.current.weather_code) ([int]$raw.current.is_day)
                 $today = [string]$raw.daily.time[0]
                 $daily = @()
                 for ($i = 0; $i -lt $raw.daily.time.Count; $i++) {

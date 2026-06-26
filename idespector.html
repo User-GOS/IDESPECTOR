@@ -650,8 +650,9 @@
     background: var(--bg-glass); border: 1px solid var(--border);
     cursor:pointer; display:flex; align-items:center; justify-content:center;
     font-size:16px; transition:all .2s var(--ease-out);
-    color:var(--text-secondary);
+    color:var(--text-secondary); padding:0;
   }
+  .theme-btn { font:inherit; appearance:none; }
   .theme-btn:hover, .notif-btn:hover {
     border-color:var(--border-bright);
     background:var(--bg-glass);
@@ -2943,7 +2944,7 @@
           <span class="tg-dot" id="tg-status-dot" title="Telegram desativado" style="top:-4px;left:-4px;bottom:auto;right:auto"></span>
           <span class="wa-dot" id="wa-status-dot" title="WhatsApp desativado"></span>
         </div>
-        <div class="theme-btn" onclick="toggleTheme()" title="Tema"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+        <button type="button" class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Modo claro" aria-label="Alternar tema claro e escuro"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg></button>
       </div>
     </div>
   </div>
@@ -3740,8 +3741,16 @@ const WEATHER_CODES={
   80:{label:'Pancadas leves',icon:'🌦️'},81:{label:'Pancadas',icon:'🌦️'},82:{label:'Pancadas fortes',icon:'⛈️'},
   95:{label:'Tempestade',icon:'⛈️'},96:{label:'Tempestade c/ granizo',icon:'⛈️'},99:{label:'Tempestade c/ granizo',icon:'⛈️'},
 };
-function weatherFromCode(code){
-  return WEATHER_CODES[code]||{label:'Tempo variável',icon:'🌡️'};
+function weatherFromCode(code,isDay=true){
+  const base=WEATHER_CODES[code]||{label:'Tempo variável',icon:'🌡️'};
+  if(isDay!==0&&isDay!==false) return base;
+  const nightMap={
+    0:{label:'Noite limpa',icon:'🌙'},
+    1:{label:'Noite limpa',icon:'🌙'},
+    2:{label:'Parcial. nublado',icon:'☁️'},
+    3:{label:'Nublado',icon:'☁️'},
+  };
+  return nightMap[code]||base;
 }
 function weatherDayLabel(isoDate,index){
   if(index===0) return 'Hoje';
@@ -3753,7 +3762,8 @@ function parseWeatherOpenMeteo(data){
   const cur=data.current||{};
   const daily=data.daily||{};
   const dates=daily.time||[];
-  const wInfo=weatherFromCode(cur.weather_code);
+  const isDay=cur.is_day;
+  const wInfo=weatherFromCode(cur.weather_code,isDay);
   return {
     city:'São Paulo, SP',
     date:dates[0]||todayStr(),
@@ -3763,6 +3773,7 @@ function parseWeatherOpenMeteo(data){
       humidity:Math.round(cur.relative_humidity_2m??0),
       windKmh:Math.round(cur.wind_speed_10m??0),
       code:cur.weather_code,
+      isDay:isDay!==0,
       label:wInfo.label,
       icon:wInfo.icon,
     },
@@ -3820,7 +3831,7 @@ async function fetchWeatherFromApi(){
   return data;
 }
 async function fetchWeatherDirect(){
-  const url='https://api.open-meteo.com/v1/forecast?latitude=-23.5505&longitude=-46.6333&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo&forecast_days=5';
+  const url='https://api.open-meteo.com/v1/forecast?latitude=-23.5505&longitude=-46.6333&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo&forecast_days=5';
   const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
   const timer=ctrl?setTimeout(()=>ctrl.abort(),12000):null;
   const res=await fetch(url,ctrl?{signal:ctrl.signal}:{});
@@ -3830,7 +3841,7 @@ async function fetchWeatherDirect(){
   return parseWeatherOpenMeteo(raw);
 }
 function weatherCacheKey(dateStr=todayStr()){
-  return 'idespector-weather-v1-'+dateStr;
+  return 'idespector-weather-v2-'+dateStr;
 }
 function weatherOfflineMessage(){
   if(location.protocol==='file:') return `Abra pelo servidor: ${SERVER_URL}`;
@@ -8137,14 +8148,42 @@ async function connectWhatsApp(){
 }
 
 // ============================================================
-// THEME
+// THEME (claro / escuro)
 // ============================================================
-function toggleTheme(){
-  const html=document.documentElement;
-  const dark=html.getAttribute('data-theme')==='dark';
-  html.setAttribute('data-theme',dark?'light':'dark');
-  document.querySelector('.theme-btn').textContent=dark?'🌙':'☀️';
+const THEME_STORAGE_KEY='idespector-theme';
+function themeSunSvg(){
+  return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg>';
 }
+function themeMoonSvg(){
+  return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+}
+function syncThemeButton(){
+  const btn=document.getElementById('theme-btn');
+  if(!btn) return;
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  btn.innerHTML=dark?themeSunSvg():themeMoonSvg();
+  btn.title=dark?'Ativar modo claro':'Ativar modo escuro';
+  btn.setAttribute('aria-label',dark?'Ativar modo claro':'Ativar modo escuro');
+}
+function applyColorTheme(theme){
+  const t=theme==='light'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  try{ localStorage.setItem(THEME_STORAGE_KEY,t); }catch(_){}
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.content=t==='light'?'#f1f5f9':'#3b82f6';
+  syncThemeButton();
+}
+function toggleTheme(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  applyColorTheme(dark?'light':'dark');
+}
+function initColorTheme(){
+  let saved=null;
+  try{ saved=localStorage.getItem(THEME_STORAGE_KEY); }catch(_){}
+  if(saved==='light'||saved==='dark') applyColorTheme(saved);
+  else syncThemeButton();
+}
+window.toggleTheme=toggleTheme;
 
 // ============================================================
 // FOCUS MODE
@@ -8674,6 +8713,7 @@ function bootstrapApp(){
 }
 
 initTranslator();
+initColorTheme();
 initCyberAmbient();
 initPwa();
 initAuth();
