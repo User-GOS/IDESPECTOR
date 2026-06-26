@@ -771,7 +771,6 @@
   /* CONTENT */
   .content { padding: 28px 32px 48px; max-width:1440px; margin:0 auto; width:100%; flex:1; }
   #main-content.view-dashboard-compact { padding-top:12px; }
-  #clock-card { margin-bottom:16px; }
 
   /* QUICK STRIP — grade 3×2 SaaS */
   .quick-strip {
@@ -3808,6 +3807,7 @@ function animateDashboardBlocks(){
   const content=document.getElementById('main-content');
   if(!content||state.currentView!=='dashboard') return;
   const selectors=[
+    '#clock-card',
     '#quick-strip .quick-strip-btn',
     '#metrics-grid .metric-card',
     '#row-productivity .card',
