@@ -2164,6 +2164,16 @@
   .kanban-col {
     background:var(--bg-glass); border:1px solid var(--border);
     border-radius:12px; padding:10px; min-height:200px;
+    display:flex; flex-direction:column;
+  }
+  .kanban-col-body {
+    flex:1; min-height:120px; border-radius:8px;
+    transition:background .15s, outline-color .15s;
+  }
+  .kanban-col-body.kanban-drop-target {
+    background:var(--accent-dim);
+    outline:2px dashed var(--accent);
+    outline-offset:-2px;
   }
   .kanban-col-head {
     font-size:11px; font-weight:800; text-transform:uppercase;
@@ -2176,10 +2186,19 @@
   }
   .kanban-card {
     padding:10px 12px; border-radius:10px; background:var(--bg-card);
-    border:1px solid var(--border); margin-bottom:8px; cursor:pointer;
-    transition:border-color .2s, transform .2s;
+    border:1px solid var(--border); margin-bottom:8px; cursor:grab;
+    transition:border-color .2s, transform .2s, opacity .2s, box-shadow .2s;
+    user-select:none; touch-action:none;
   }
   .kanban-card:hover { border-color:var(--border-bright); transform:translateY(-1px); }
+  .kanban-card:active { cursor:grabbing; }
+  .kanban-card.kanban-dragging {
+    opacity:.45; transform:scale(.98);
+    box-shadow:0 8px 24px rgba(0,0,0,0.35);
+  }
+  .kanban-card.kanban-drop-before {
+    box-shadow:0 -3px 0 var(--accent);
+  }
   .kanban-card-title { font-size:13px; font-weight:600; line-height:1.35; margin-bottom:6px; }
   .kanban-card-meta { display:flex; gap:4px; flex-wrap:wrap; }
   .kanban-move { display:flex; gap:4px; margin-top:8px; }
@@ -4467,12 +4486,103 @@ const KANBAN_COLS=[
   {id:'doing',label:'Fazendo',icon:'⚡'},
   {id:'done',label:'Concluído',icon:'✅'},
 ];
-function moveTaskColumn(id,col){
-  const t=state.tasks.find(x=>x.id===id);
+let kanbanDragTaskId=null;
+let kanbanDidDrag=false;
+
+function taskKanbanCol(t){
+  if(t.column) return t.column;
+  return t.done?'done':'todo';
+}
+function getKanbanDropBeforeId(body,clientY){
+  const cards=[...body.querySelectorAll('.kanban-card:not(.kanban-dragging)')];
+  for(const card of cards){
+    const rect=card.getBoundingClientRect();
+    if(clientY<rect.top+rect.height/2) return +card.dataset.taskId;
+  }
+  return null;
+}
+function moveTaskInKanban(taskId,targetCol,beforeTaskId){
+  const t=state.tasks.find(x=>x.id===taskId);
   if(!t) return;
-  t.column=col;
-  t.done=col==='done';
+  t.column=targetCol;
+  t.done=targetCol==='done';
+  const idx=state.tasks.findIndex(x=>x.id===taskId);
+  if(idx<0) return;
+  state.tasks.splice(idx,1);
+  if(beforeTaskId&&beforeTaskId!==taskId){
+    const insertIdx=state.tasks.findIndex(x=>x.id===beforeTaskId);
+    if(insertIdx>=0) state.tasks.splice(insertIdx,0,t);
+    else state.tasks.push(t);
+  }else{
+    let insertAt=state.tasks.length;
+    for(let i=state.tasks.length-1;i>=0;i--){
+      if(taskKanbanCol(state.tasks[i])===targetCol){ insertAt=i+1; break; }
+    }
+    state.tasks.splice(insertAt,0,t);
+  }
   save();renderKanban();renderTasks();updateMetrics();
+}
+function moveTaskColumn(id,col){
+  moveTaskInKanban(id,col,null);
+}
+function clearKanbanDropHints(board){
+  board.querySelectorAll('.kanban-drop-target').forEach(el=>el.classList.remove('kanban-drop-target'));
+  board.querySelectorAll('.kanban-drop-before').forEach(el=>el.classList.remove('kanban-drop-before'));
+}
+function initKanbanDragDrop(){
+  const board=document.getElementById('kanban-board');
+  if(!board||board._kanbanDnD) return;
+  board._kanbanDnD=true;
+  board.addEventListener('dragstart',e=>{
+    const card=e.target.closest('.kanban-card');
+    if(!card||e.target.closest('.kanban-move')){ e.preventDefault(); return; }
+    kanbanDragTaskId=+card.dataset.taskId;
+    kanbanDidDrag=false;
+    e.dataTransfer.effectAllowed='move';
+    e.dataTransfer.setData('text/plain',String(kanbanDragTaskId));
+    requestAnimationFrame(()=>card.classList.add('kanban-dragging'));
+  });
+  board.addEventListener('dragend',e=>{
+    e.target.closest('.kanban-card')?.classList.remove('kanban-dragging');
+    clearKanbanDropHints(board);
+    setTimeout(()=>{ kanbanDragTaskId=null; },0);
+  });
+  board.addEventListener('dragover',e=>{
+    const body=e.target.closest('.kanban-col-body');
+    if(!body) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect='move';
+    clearKanbanDropHints(board);
+    body.classList.add('kanban-drop-target');
+    const beforeId=getKanbanDropBeforeId(body,e.clientY);
+    if(beforeId){
+      const marker=body.querySelector(`.kanban-card[data-task-id="${beforeId}"]`);
+      marker?.classList.add('kanban-drop-before');
+    }
+  });
+  board.addEventListener('dragleave',e=>{
+    const body=e.target.closest('.kanban-col-body');
+    if(!body||body.contains(e.relatedTarget)) return;
+    body.classList.remove('kanban-drop-target');
+    body.querySelectorAll('.kanban-drop-before').forEach(el=>el.classList.remove('kanban-drop-before'));
+  });
+  board.addEventListener('drop',e=>{
+    e.preventDefault();
+    const body=e.target.closest('.kanban-col-body');
+    if(!body) return;
+    const col=body.dataset.col;
+    const taskId=kanbanDragTaskId||+e.dataTransfer.getData('text/plain');
+    if(!taskId||!col) return;
+    kanbanDidDrag=true;
+    clearKanbanDropHints(board);
+    moveTaskInKanban(taskId,col,getKanbanDropBeforeId(body,e.clientY));
+  });
+  board.addEventListener('click',e=>{
+    if(kanbanDidDrag){ kanbanDidDrag=false; return; }
+    const card=e.target.closest('.kanban-card');
+    if(!card||e.target.closest('.kanban-move')) return;
+    openEditTask(+card.dataset.taskId);
+  });
 }
 function renderKanban(){
   const el=document.getElementById('kanban-board');
@@ -4483,11 +4593,12 @@ function renderKanban(){
     return;
   }
   el.innerHTML=`<div class="kanban-board">${KANBAN_COLS.map(col=>{
-    const items=tasks.filter(t=>(t.column||'todo')===col.id||(col.id==='done'&&t.done&&!t.column));
-    return `<div class="kanban-col">
+    const items=tasks.filter(t=>taskKanbanCol(t)===col.id);
+    return `<div class="kanban-col" data-col="${col.id}">
       <div class="kanban-col-head"><span>${col.icon} ${col.label}</span><span class="kanban-col-count">${items.length}</span></div>
+      <div class="kanban-col-body" data-col="${col.id}">
       ${items.map(t=>`
-        <div class="kanban-card" onclick="openEditTask(${t.id})">
+        <div class="kanban-card" draggable="true" data-task-id="${t.id}">
           <div class="kanban-card-title">${t.text}</div>
           <div class="kanban-card-meta">
             <span class="priority-badge p-${t.priority||'media'}">${priorityLabel(t.priority||'media')}</span>
@@ -4496,10 +4607,11 @@ function renderKanban(){
             ${t.important?`<span class="cat-badge">⭐</span>`:''}
           </div>
           <div class="kanban-move" onclick="event.stopPropagation()">
-            ${col.id!=='todo'?`<button class="btn btn-ghost btn-xs" onclick="moveTaskColumn(${t.id},'${col.id==='doing'?'todo':'doing'}')">←</button>`:''}
-            ${col.id!=='done'?`<button class="btn btn-soft btn-xs" onclick="moveTaskColumn(${t.id},'${col.id==='todo'?'doing':'done'}')">→</button>`:''}
+            ${col.id!=='todo'?`<button type="button" draggable="false" class="btn btn-ghost btn-xs" onclick="moveTaskColumn(${t.id},'${col.id==='doing'?'todo':'doing'}')">←</button>`:''}
+            ${col.id!=='done'?`<button type="button" draggable="false" class="btn btn-soft btn-xs" onclick="moveTaskColumn(${t.id},'${col.id==='todo'?'doing':'done'}')">→</button>`:''}
           </div>
         </div>`).join('')}
+      </div>
     </div>`;
   }).join('')}</div>`;
 }
@@ -7063,6 +7175,7 @@ function bootstrapApp(){
   if(appBootstrapped) return;
   appBootstrapped=true;
   initRippleEffects();
+  initKanbanDragDrop();
   load();
   initTranslator();
   handleOutlookAuthCallback();
