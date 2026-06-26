@@ -246,12 +246,7 @@
     display:flex; align-items:center; gap:16px 24px;
     flex-wrap:wrap; text-align:left; width:auto;
   }
-  #clock-card .foco-time {
-    font-size:28px; margin:0; line-height:1;
-    font-family:'JetBrains Mono',monospace; font-weight:600;
-    color:var(--text-primary); font-variant-numeric:tabular-nums;
-  }
-  #clock-card .foco-date { font-size:13px; color:var(--text-secondary); font-weight:500; margin:0; }
+  #clock-card .foco-date { font-size:14px; color:var(--text-primary); font-weight:600; margin:0; }
   #clock-card .foco-tz {
     font-size:11px; color:var(--text-muted); margin:0;
     padding:3px 8px; border-radius:4px;
@@ -1904,7 +1899,6 @@
     #clock-card .card-header { margin-left:0; width:100%; }
     #clock-card .foco-layout { justify-content:flex-start; width:100%; }
     #clock-card .foco-info { flex-direction:column; align-items:flex-start; gap:4px; }
-    #clock-card .foco-time { font-size:32px; }
     .grid-2, .grid-3, .grid-4 { grid-template-columns:1fr; }
     .header-top { grid-template-columns:1fr; gap:10px; min-height:auto; padding:10px 0; }
     .header-utils { flex-wrap:wrap; justify-content:space-between; width:100%; }
@@ -2697,7 +2691,6 @@
   <div class="card" id="clock-card">
     <div class="foco-layout">
       <div class="foco-info">
-        <div class="foco-time" id="main-clock">00:00:00</div>
         <div class="foco-date" id="main-date">—</div>
         <div class="foco-tz" id="main-tz">Horário de Brasília (UTC-3)</div>
       </div>
@@ -3777,7 +3770,7 @@ function pulseClockTick(){
   const sec=new Date().getSeconds();
   if(sec===_lastClockSecond) return;
   _lastClockSecond=sec;
-  ['header-clock','main-clock'].forEach(id=>{
+  ['header-clock'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el) return;
     el.classList.remove('clock-tick');
@@ -3844,10 +3837,11 @@ function updateClock(){
   const t=now.toLocaleTimeString('pt-BR');
   const d=now.toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const dc=d.charAt(0).toUpperCase()+d.slice(1);
-  document.getElementById('header-clock').textContent=t;
+  const headerClock=document.getElementById('header-clock');
+  if(headerClock) headerClock.textContent=t;
   document.getElementById('header-date').textContent=dc.split(',')[0]+', '+dc.split(',').slice(1).join(',');
-  document.getElementById('main-clock').textContent=t;
-  document.getElementById('main-date').textContent=dc;
+  const mainDate=document.getElementById('main-date');
+  if(mainDate) mainDate.textContent=dc;
   if(state.focusMode)document.getElementById('focus-clock-display').textContent=t;
 
   // greeting
