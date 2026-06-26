@@ -346,6 +346,53 @@
     margin-top:12px; flex-wrap:wrap;
   }
   .verse-ref { font-size:12px; font-weight:700; color:var(--accent); font-style:normal; }
+  #news-card {
+    min-height:auto !important;
+    background:linear-gradient(135deg, rgba(245,158,11,0.06) 0%, rgba(239,68,68,0.04) 100%);
+    border-color:rgba(245,158,11,0.2);
+  }
+  .news-card-body { padding:18px 22px 14px; display:flex; flex-direction:column; min-height:0; flex:1; }
+  .news-card-head {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-bottom:10px; flex-wrap:wrap; flex-shrink:0;
+  }
+  .news-card-title {
+    font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.7px;
+    color:var(--accent-2); display:flex; align-items:center; gap:6px;
+  }
+  .news-date { font-size:11px; color:var(--text-muted); font-weight:600; text-transform:capitalize; }
+  .news-list-wrap { flex:1; overflow-y:auto; min-height:80px; max-height:220px; padding-right:4px; }
+  .news-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .news-item {
+    padding:8px 10px; border-radius:var(--radius-sm);
+    background:var(--bg-elevated); border:1px solid var(--border);
+    transition:border-color .2s, background .2s;
+  }
+  .news-item:hover { border-color:rgba(245,158,11,0.35); background:var(--bg-card); }
+  .news-item a {
+    display:block; color:var(--text-primary); text-decoration:none;
+    font-size:13px; font-weight:600; line-height:1.45;
+  }
+  .news-item a:hover { color:var(--accent); }
+  .news-meta {
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    margin-top:4px; font-size:10px; color:var(--text-muted); font-weight:600;
+  }
+  .news-source {
+    padding:2px 7px; border-radius:999px; background:var(--accent-dim);
+    color:var(--accent-2); font-size:10px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;
+  }
+  .news-loading, .news-empty {
+    font-size:13px; color:var(--text-muted); font-style:italic; padding:8px 0;
+  }
+  .news-foot {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-top:10px; flex-shrink:0; flex-wrap:wrap;
+  }
+  .news-feed-label { font-size:10px; color:var(--text-muted); font-weight:600; }
+  #row-daily-brief { grid-template-columns:1fr 1fr; }
+  @media (max-width:900px) { #row-daily-brief { grid-template-columns:1fr; } }
   #row-agenda-habits #agenda-card { min-height:340px; }
   #row-agenda-habits #habits-card { min-height:340px; }
   .card-body-scroll {
@@ -2776,8 +2823,8 @@
     </div>
   </div>
 
-  <!-- VERSÍCULO DO DIA -->
-  <div class="dashboard-bento" id="row-daily-verse">
+  <!-- VERSÍCULO + NOTÍCIAS DO DIA -->
+  <div class="dashboard-balanced" id="row-daily-brief">
     <div class="card" id="verse-card">
       <div class="verse-card-body">
         <div class="verse-card-head">
@@ -2788,6 +2835,22 @@
         <div class="verse-foot">
           <cite class="verse-ref" id="verse-ref">—</cite>
           <button type="button" class="btn btn-soft btn-sm" onclick="copyDailyVerse()">📋 Copiar</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="news-card">
+      <div class="news-card-body">
+        <div class="news-card-head">
+          <div class="news-card-title"><span aria-hidden="true">📰</span> Notícias do dia</div>
+          <span class="news-date" id="news-date">—</span>
+        </div>
+        <div class="news-list-wrap" id="news-list-wrap">
+          <p class="news-loading" id="news-status">Carregando notícias...</p>
+          <ul class="news-list" id="news-list" hidden></ul>
+        </div>
+        <div class="news-foot">
+          <span class="news-feed-label" id="news-feed-label"></span>
+          <button type="button" class="btn btn-soft btn-sm" onclick="loadDailyNews(true)">↻ Atualizar</button>
         </div>
       </div>
     </div>
@@ -3212,6 +3275,114 @@ function renderDailyVerse(){
   loadDailyVerse();
 }
 window.loadDailyVerse=loadDailyVerse;
+
+let lastRenderedNewsDate=null;
+let dailyNewsCache=null;
+function dailyNewsCacheKey(dateStr=todayStr()){
+  return 'idespector-daily-news-v1-'+dateStr;
+}
+function formatNewsDateLabel(dateStr=todayStr()){
+  const p=dateStr.split('-').map(Number);
+  const label=new Date(p[0],p[1]-1,p[2]).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  return label.charAt(0).toUpperCase()+label.slice(1);
+}
+function formatNewsTime(isoOrRss){
+  if(!isoOrRss) return '';
+  const d=new Date(isoOrRss);
+  if(Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function applyDailyNewsToDOM(payload){
+  const listEl=document.getElementById('news-list');
+  const statusEl=document.getElementById('news-status');
+  const dateEl=document.getElementById('news-date');
+  const feedEl=document.getElementById('news-feed-label');
+  if(dateEl) dateEl.textContent=formatNewsDateLabel(payload?.date||todayStr());
+  if(!listEl||!statusEl) return;
+  const items=Array.isArray(payload?.items)?payload.items:[];
+  if(!items.length){
+    listEl.hidden=true;
+    statusEl.hidden=false;
+    statusEl.textContent='Nenhuma notícia disponível no momento.';
+    if(feedEl) feedEl.textContent='';
+    return;
+  }
+  listEl.innerHTML=items.map(it=>{
+    const safeUrl=String(it.url||'#').replace(/"/g,'&quot;');
+    const safeTitle=String(it.title||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const source=String(it.source||'Notícias').replace(/</g,'&lt;');
+    const time=formatNewsTime(it.publishedAt);
+    return `<li class="news-item">
+      <a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeTitle}</a>
+      <div class="news-meta"><span class="news-source">${source}</span>${time?`<span>${time}</span>`:''}</div>
+    </li>`;
+  }).join('');
+  statusEl.hidden=true;
+  listEl.hidden=false;
+  if(feedEl) feedEl.textContent=payload.feed?`Fonte: ${payload.feed}`:'';
+  dailyNewsCache=payload;
+}
+function dailyNewsOfflineMessage(){
+  if(location.protocol==='file:') return `Abra pelo servidor: ${SERVER_URL}`;
+  if(isLocalDev()) return 'Execute iniciar.bat e recarregue a página.';
+  return 'Serviço de notícias indisponível. Tente novamente.';
+}
+async function loadDailyNews(force=false){
+  const today=todayStr();
+  const statusEl=document.getElementById('news-status');
+  const listEl=document.getElementById('news-list');
+  if(!statusEl) return;
+  if(!force&&lastRenderedNewsDate===today&&dailyNewsCache?.items?.length){
+    applyDailyNewsToDOM(dailyNewsCache);
+    return;
+  }
+  if(!force){
+    try{
+      const cached=localStorage.getItem(dailyNewsCacheKey(today));
+      if(cached){
+        const data=JSON.parse(cached);
+        if(data?.items?.length){
+          applyDailyNewsToDOM(data);
+          lastRenderedNewsDate=today;
+          return;
+        }
+      }
+    }catch(_){}
+  }
+  if(location.protocol==='file:'){
+    statusEl.hidden=false;
+    listEl.hidden=true;
+    statusEl.textContent=dailyNewsOfflineMessage();
+    document.getElementById('news-date').textContent=formatNewsDateLabel(today);
+    return;
+  }
+  statusEl.hidden=false;
+  listEl.hidden=true;
+  statusEl.textContent='Carregando notícias...';
+  try{
+    const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+    const timer=ctrl?setTimeout(()=>ctrl.abort(),12000):null;
+    const res=await fetch('/api/news/daily?limit=8',ctrl?{signal:ctrl.signal,cache:'no-store'}:{cache:'no-store'});
+    if(timer) clearTimeout(timer);
+    const data=await res.json();
+    if(!res.ok||!data.ok||!data.items?.length){
+      throw new Error(data?.error||'Falha ao carregar notícias');
+    }
+    const payload={date:data.date||today,feed:data.feed||'',items:data.items};
+    applyDailyNewsToDOM(payload);
+    lastRenderedNewsDate=today;
+    try{localStorage.setItem(dailyNewsCacheKey(today),JSON.stringify(payload));}catch(_){}
+  }catch(_){
+    statusEl.hidden=false;
+    listEl.hidden=true;
+    statusEl.textContent=dailyNewsOfflineMessage();
+    document.getElementById('news-date').textContent=formatNewsDateLabel(today);
+  }
+}
+function renderDailyNews(){
+  loadDailyNews();
+}
+window.loadDailyNews=loadDailyNews;
 function copyDailyVerse(){
   const verse=dailyVerseCache||getDailyVerse();
   const text=`"${verse.text}" — ${verse.ref}`;
@@ -4004,7 +4175,7 @@ function animateDashboardBlocks(){
   const selectors=[
     '#quick-strip .quick-strip-btn',
     '#metrics-grid .metric-card',
-    '#row-daily-verse .card',
+    '#row-daily-brief .card',
     '#row-kanban-main .card',
     '#row-agenda-habits .card',
     '#row-tasks-reminders .card',
@@ -5412,6 +5583,7 @@ function renderAll(){
   renderTasks(); renderReminders(); renderAlarms(); renderAgenda(); renderNotes();
   renderHabits(); renderGoals(); renderKanban(); renderTranslator();
   renderDailyVerse();
+  renderDailyNews();
   updateMetrics();
 }
 
@@ -7809,6 +7981,7 @@ const VIEW_SECTIONS = {
   'quick-strip': ['dashboard'],
   'metrics-grid': ['dashboard'],
   'verse-card': ['dashboard'],
+  'news-card': ['dashboard'],
   'kanban-card': ['dashboard', 'productivity', 'tasks'],
   'habits-card': ['dashboard', 'productivity'],
   'goals-card': ['dashboard', 'productivity'],
@@ -7819,7 +7992,7 @@ const VIEW_SECTIONS = {
   'notes-card': ['dashboard', 'notes'],
   'translator-card': ['translator'],
 };
-const VIEW_ROWS = ['row-daily-verse', 'row-kanban-main', 'row-agenda-habits', 'row-tasks-reminders', 'row-goals-notes', 'row-alarms', 'row-translator'];
+const VIEW_ROWS = ['row-daily-brief', 'row-kanban-main', 'row-agenda-habits', 'row-tasks-reminders', 'row-goals-notes', 'row-alarms', 'row-translator'];
 const VIEW_META = {
   dashboard: { title:'Dashboard', sub:'Visão geral do seu dia' },
   tasks: { title:'Tarefas', sub:'Lista e Kanban das suas tarefas' },
@@ -7888,7 +8061,7 @@ function setView(view, el){
     content.classList.remove('view-panel');
     void content.offsetWidth;
     content.classList.add('view-panel');
-    if(view==='dashboard') loadDailyVerse();
+    if(view==='dashboard'){ loadDailyVerse(); loadDailyNews(); }
     animateDashboardBlocks();
   }
 
@@ -7975,8 +8148,8 @@ function bootstrapApp(){
 initTranslator();
 initCyberAmbient();
 initAuth();
-if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>loadDailyVerse());
-else loadDailyVerse();
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{ loadDailyVerse(); loadDailyNews(); });
+else { loadDailyVerse(); loadDailyNews(); }
 </script>
 </body>
 </html>

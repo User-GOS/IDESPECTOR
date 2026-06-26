@@ -17,6 +17,7 @@ Write-Host "WhatsApp API: POST http://localhost:$Port/api/whatsapp"
 Write-Host "Telegram API: POST http://localhost:$Port/api/telegram/send"
 Write-Host "Tradutor API: GET http://localhost:$Port/api/translate?q=ola&langpair=pt|en"
 Write-Host "Outlook ICS: POST http://localhost:$Port/api/outlook/ics"
+Write-Host "Noticias: GET http://localhost:$Port/api/news/daily"
 Write-Host "Pressione Ctrl+C para parar."
 
 function Add-CorsHeaders($response) {
@@ -268,6 +269,64 @@ while ($listener.IsListening) {
                 Send-Json $response 200 @{ ok = $true; ics = $text }
             } catch {
                 Send-Json $response 502 @{ ok = $false; error = "Erro ao baixar ICS: $($_.Exception.Message)" }
+            }
+            continue
+        }
+
+        if ($path -eq "/api/news/daily" -and $request.HttpMethod -eq "GET") {
+            $limit = 8
+            try {
+                $limitRaw = [string]$request.QueryString["limit"]
+                if ($limitRaw -match '^\d+$') { $limit = [Math]::Min([Math]::Max([int]$limitRaw, 1), 15) }
+            } catch {}
+            $feeds = @(
+                @{ name = "Google News BR"; url = "https://news.google.com/rss?hl=pt-BR&gl=BR&ceid=BR:pt-419" },
+                @{ name = "G1"; url = "https://g1.globo.com/rss/g1/" },
+                @{ name = "UOL"; url = "https://rss.uol.com.br/feed/index.xml" }
+            )
+            $newsResult = $null
+            foreach ($feed in $feeds) {
+                try {
+                    $resp = Invoke-WebRequest -Uri $feed.url -UseBasicParsing -TimeoutSec 15 -Headers @{ "User-Agent" = "IDespector/1.0" }
+                    [xml]$xml = $resp.Content
+                    $rawItems = @($xml.rss.channel.item)
+                    if ($rawItems.Count -eq 0) { continue }
+                    $items = @()
+                    foreach ($it in ($rawItems | Select-Object -First $limit)) {
+                        $title = [string]$it.title
+                        $source = ""
+                        if ($it.source) {
+                            if ($it.source.'#text') { $source = [string]$it.source.'#text' }
+                            else { $source = [string]$it.source }
+                        }
+                        if (-not $source -and $title -match ' - (.+)$') {
+                            $source = $Matches[1]
+                            $title = $title -replace ' - .+$',''
+                        } elseif ($source -and $title.EndsWith(" - $source")) {
+                            $title = $title.Substring(0, $title.Length - ($source.Length + 3)).Trim()
+                        }
+                        $items += @{
+                            title = $title.Trim()
+                            url = [string]$it.link
+                            source = if ($source) { $source.Trim() } else { "Noticias" }
+                            publishedAt = [string]$it.pubDate
+                        }
+                    }
+                    if ($items.Count -gt 0) {
+                        $newsResult = @{
+                            ok = $true
+                            date = (Get-Date -Format "yyyy-MM-dd")
+                            feed = $feed.name
+                            items = $items
+                        }
+                        break
+                    }
+                } catch {}
+            }
+            if ($newsResult) {
+                Send-Json $response 200 $newsResult
+            } else {
+                Send-Json $response 502 @{ ok = $false; error = "Nenhuma fonte de noticias disponivel" }
             }
             continue
         }
