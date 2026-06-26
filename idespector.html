@@ -215,13 +215,15 @@
     margin-bottom:20px; align-items:stretch;
   }
   .dashboard-balanced .card,
-  .dashboard-bento .card { display:flex; flex-direction:column; min-height:280px; }
+  .dashboard-bento .card:not(#clock-card) { display:flex; flex-direction:column; min-height:280px; }
   .dashboard-bento #agenda-card { min-height:0; }
   #clock-card {
-    min-height:0; align-self:start;
-    padding-bottom:18px;
+    min-height:auto !important;
+    height:auto;
+    align-self:start;
+    padding:12px 18px 10px;
   }
-  #clock-card .card-header { margin-bottom:10px; padding-bottom:10px; }
+  #clock-card .card-header { margin-bottom:4px; padding-bottom:8px; }
   .card-body-scroll {
     flex:1; overflow-y:auto; min-height:100px; max-height:320px;
     padding-right:4px;
@@ -823,9 +825,14 @@
 
   /* FOCO CARD */
   #clock-card .foco-layout {
-    display:flex; align-items:flex-start; justify-content:center;
-    padding:0; flex:0;
+    display:block; padding:0; margin:0; flex:0 0 auto;
   }
+  #clock-card .foco-info { text-align:left; width:100%; }
+  #clock-card .foco-time {
+    font-size:40px; margin-bottom:4px;
+  }
+  #clock-card .foco-date { font-size:13px; }
+  #clock-card .foco-tz { margin-top:2px; font-size:11px; }
   .foco-layout { display:flex; align-items:center; justify-content:center; padding:8px 0; }
   .foco-info { text-align:center; min-width:0; }
   .foco-time {
