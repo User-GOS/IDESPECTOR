@@ -2,7 +2,15 @@
 <html lang="pt-BR" data-theme="dark" data-level-tier="0">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5">
+<meta name="theme-color" content="#3b82f6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IDespector">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/idespector-icon.png">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -42,6 +50,11 @@
     --shadow-btn: 0 1px 2px rgba(0,0,0,0.2);
     --sidebar-w: 260px;
     --content-x: 28px;
+    --bottom-nav-h: 0px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
     --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px;
     --ease-out: cubic-bezier(.22, 1, .36, 1);
   }
@@ -171,11 +184,18 @@
     background: var(--bg-primary);
     color: var(--text-primary);
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
     font-size: 14px;
     line-height: 1.5;
     transition: background-color 1.1s var(--ease-out), color 0.5s ease;
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+  button, .btn, .nav-item, .mobile-nav-item, .menu-toggle, .habit-check, .task-check {
+    touch-action: manipulation;
   }
   .sidebar, .header, .card, .metric-card, .quick-strip, .main {
     transition: background-color 1.1s var(--ease-out), border-color 0.8s ease, box-shadow 0.8s ease;
@@ -2017,6 +2037,44 @@
   .view-focused #notes-card { min-height:calc(100vh - 220px); }
   .view-focused #notes-card .notes-editor { min-height:420px; max-height:none; flex:1; }
 
+  /* MOBILE / ANDROID — PWA e navegação touch */
+  .sidebar-backdrop {
+    position:fixed; inset:0; z-index:95;
+    background:rgba(0,0,0,0.55); backdrop-filter:blur(2px);
+    opacity:0; pointer-events:none; transition:opacity .25s;
+  }
+  .sidebar-backdrop.open { opacity:1; pointer-events:all; }
+  .mobile-bottom-nav {
+    display:none; position:fixed; left:0; right:0; bottom:0; z-index:120;
+    height:calc(var(--bottom-nav-h) + var(--safe-bottom));
+    padding:6px 8px calc(6px + var(--safe-bottom));
+    background:var(--bg-secondary);
+    border-top:1px solid var(--border);
+    box-shadow:0 -8px 32px rgba(0,0,0,0.22);
+    justify-content:space-around; align-items:flex-start; gap:2px;
+  }
+  .mobile-nav-item {
+    flex:1; max-width:76px; min-height:48px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    border:none; background:transparent; color:var(--text-muted);
+    font-family:inherit; font-size:10px; font-weight:600;
+    border-radius:var(--radius-md); cursor:pointer;
+    transition:color .2s, background .2s;
+    padding:6px 4px;
+  }
+  .mobile-nav-item svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+  .mobile-nav-item.active { color:var(--accent); background:var(--accent-dim); }
+  .mobile-nav-item:active { transform:scale(0.96); }
+  body.auth-locked .mobile-bottom-nav,
+  body.auth-locked .sidebar-backdrop { display:none !important; }
+  @media (min-width:769px) {
+    .sidebar-backdrop { display:none !important; }
+  }
+  @media (display-mode: standalone) {
+    .header { padding-top:calc(4px + var(--safe-top)); }
+    .sidebar { padding-top:calc(20px + var(--safe-top)); }
+  }
+
   /* RESPONSIVE */
   @media(max-width:1100px) {
     .grid-4 { grid-template-columns:repeat(2,1fr); }
@@ -2027,24 +2085,107 @@
     .view-dashboard-compact .quick-strip { grid-template-columns:repeat(4,1fr); }
   }
   @media(max-width:768px) {
+    :root { --bottom-nav-h: 58px; --content-x: 16px; }
     .agenda-layout { grid-template-columns:1fr; }
     .agenda-calendar-wrap { max-width:100%; }
-    .sidebar { transform:translateX(-100%); width:var(--sidebar-w); }
+    .sidebar {
+      transform:translateX(-100%); width:min(var(--sidebar-w), 88vw);
+      padding-top:calc(16px + var(--safe-top));
+      padding-bottom:calc(16px + var(--safe-bottom));
+      box-shadow:8px 0 40px rgba(0,0,0,0.35);
+    }
     .sidebar.open { transform:translateX(0); }
-    .main { margin-left:0; }
-    .menu-toggle { display:flex; }
-    .header { padding:0 16px; }
-    .content { padding:20px 16px 32px; }
+    .main {
+      margin-left:0;
+      padding-bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 8px);
+    }
+    body.authenticated .mobile-bottom-nav { display:flex; }
+    .menu-toggle { display:flex; min-width:44px; min-height:44px; }
+    .header { padding:0 var(--content-x); padding-top:var(--safe-top); }
+    .content { padding:16px var(--content-x) 24px; }
     #row-agenda-habits #agenda-card,
     #row-agenda-habits #habits-card { min-height:0; }
     .grid-2, .grid-3, .grid-4 { grid-template-columns:1fr; }
     .header-top { grid-template-columns:1fr; gap:10px; min-height:auto; padding:10px 0; }
-    .header-utils { flex-wrap:wrap; justify-content:space-between; width:100%; }
+    .header-utils { flex-wrap:wrap; justify-content:flex-end; width:100%; gap:8px; }
     .header-time { font-size:16px; }
     .header-time-block { display:none; }
-    .greeting-main { font-size:14px; }
+    .greeting-main { font-size:15px; max-width:100%; }
+    .greeting-tag { font-size:10px; }
     .integrations-trigger span:last-child { display:none; }
     .dashboard-bento, .dashboard-balanced { grid-template-columns:1fr; }
+    .notify-pills { display:none; }
+    .header-status-group { display:none; }
+    .work-status-pill { min-width:44px; padding:0 10px; }
+    #work-status-label { display:none; }
+    .notif-btn, .theme-btn { min-width:44px; min-height:44px; }
+    .card { min-height:0 !important; }
+    .card-body-scroll { max-height:min(50vh, 360px); }
+    #row-kanban-main .card-body-scroll { max-height:min(55vh, 400px); }
+    .kanban-board {
+      display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch; gap:12px; padding-bottom:6px;
+      grid-template-columns:unset;
+    }
+    .kanban-col {
+      min-width:min(82vw, 300px); flex-shrink:0; scroll-snap-align:start;
+    }
+    .metric-card { min-height:88px; padding:14px 12px; }
+    .metric-num { font-size:22px; }
+    .verse-text { font-size:14px; }
+    .news-list-wrap { max-height:200px; }
+    .modal-overlay { align-items:flex-end; padding:0; }
+    .modal {
+      width:100%; max-width:100%; border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+      max-height:min(92dvh, 720px); overflow-y:auto;
+      padding:24px 20px calc(24px + var(--safe-bottom));
+      transform:translateY(100%);
+    }
+    .modal-overlay.open .modal { transform:translateY(0); animation:modalSheetUp .35s var(--ease-out); }
+    @keyframes modalSheetUp {
+      from { transform:translateY(100%); opacity:0; }
+      to { transform:translateY(0); opacity:1; }
+    }
+    .modal.task-modal { width:100%; padding:20px 18px calc(20px + var(--safe-bottom)); }
+    .toast-container {
+      top:auto; bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 12px);
+      right:12px; left:12px;
+    }
+    .toast { min-width:0; width:100%; }
+    .auth-screen { padding:16px; padding-top:calc(16px + var(--safe-top)); padding-bottom:calc(16px + var(--safe-bottom)); }
+    .auth-card { padding:28px 22px 24px; }
+    .auth-brand .logo-mark { width:48px; height:48px; }
+    .form-input, .form-select, .form-textarea { font-size:16px; }
+    .btn { min-height:44px; }
+    .btn-sm { min-height:38px; }
+    .habit-check { width:36px; height:36px; }
+    .task-check { width:32px; height:32px; }
+    .integrations-menu {
+      position:fixed; left:12px; right:12px; top:auto; bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 8px);
+      width:auto; max-height:50vh; overflow-y:auto;
+    }
+    .notif-menu {
+      position:fixed; left:12px; right:12px; top:auto !important;
+      bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 8px) !important;
+      width:auto !important; max-height:55vh;
+    }
+    .alarm-overlay, .focus-overlay { padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
+    .foco-time { font-size:36px; }
+    .view-bar { flex-direction:column; align-items:flex-start; gap:10px; }
+    .view-bar-actions { width:100%; }
+    .view-bar-actions .btn { flex:1; }
+  }
+  @media(max-width:480px) {
+    :root { --content-x: 12px; }
+    .view-dashboard-compact .quick-strip { grid-template-columns:repeat(2,1fr); gap:8px; }
+    .view-dashboard-compact .quick-strip-btn { min-height:60px; font-size:11px; }
+    .header-left { gap:10px; }
+    .header-actions { gap:6px; }
+    .card-header { flex-wrap:wrap; gap:8px; }
+    .card-title { font-size:13px; }
+    .verse-card-body, .news-card-body { padding:14px 16px 12px; }
+    .mobile-nav-item { font-size:9px; }
+    .mobile-nav-item svg { width:18px; height:18px; }
   }
 
   /* CHIP */
@@ -2705,13 +2846,14 @@
     </div>
   </div>
 </nav>
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()" aria-hidden="true"></div>
 
 <!-- HEADER -->
 <div class="main">
 <header class="header" id="main-header">
   <div class="header-top">
     <div class="header-left">
-      <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')" title="Menu">☰</button>
+      <button class="menu-toggle" onclick="toggleSidebarMobile()" title="Menu" aria-label="Abrir menu">☰</button>
       <div>
         <div class="greeting-tag" id="greeting-tag">Seu painel</div>
         <div class="greeting-main" id="greeting-main">Bom dia</div>
@@ -2998,6 +3140,30 @@
 
 </div><!-- /content -->
 </div><!-- /main -->
+
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navegação principal">
+  <button type="button" class="mobile-nav-item active" data-view="dashboard" onclick="mobileNavTo('dashboard', this)" aria-label="Dashboard">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span>Início</span>
+  </button>
+  <button type="button" class="mobile-nav-item" data-view="tasks" onclick="mobileNavTo('tasks', this)" aria-label="Tarefas">
+    <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span>Tarefas</span>
+  </button>
+  <button type="button" class="mobile-nav-item" data-view="agenda" onclick="mobileNavTo('agenda', this)" aria-label="Agenda">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span>Agenda</span>
+  </button>
+  <button type="button" class="mobile-nav-item" data-view="notes" onclick="mobileNavTo('notes', this)" aria-label="Notas">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span>Notas</span>
+  </button>
+  <button type="button" class="mobile-nav-item" data-view="menu" onclick="toggleSidebarMobile()" aria-label="Menu completo">
+    <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <span>Menu</span>
+  </button>
+</nav>
+
 </div><!-- /app-wrapper -->
 
 <!-- MODALS -->
@@ -7974,6 +8140,41 @@ window.shiftPickerMonth=shiftPickerMonth;
 window.setPickerToday=setPickerToday;
 window.clearPickerDate=clearPickerDate;
 
+function closeSidebar(){
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('sidebar-backdrop')?.classList.remove('open');
+}
+function openSidebar(){
+  document.getElementById('sidebar')?.classList.add('open');
+  document.getElementById('sidebar-backdrop')?.classList.add('open');
+}
+function toggleSidebarMobile(){
+  const sb=document.getElementById('sidebar');
+  if(sb?.classList.contains('open')) closeSidebar();
+  else openSidebar();
+}
+function syncMobileNavActive(view){
+  document.querySelectorAll('.mobile-nav-item[data-view]').forEach(btn=>{
+    if(btn.dataset.view==='menu') return;
+    btn.classList.toggle('active', btn.dataset.view===view);
+  });
+}
+function mobileNavTo(view, el){
+  closeSidebar();
+  const navEl=document.querySelector(`.sidebar .nav-item[onclick*="setView('${view}'"]`);
+  setView(view, navEl||el);
+}
+window.closeSidebar=closeSidebar;
+window.toggleSidebarMobile=toggleSidebarMobile;
+window.mobileNavTo=mobileNavTo;
+
+function initPwa(){
+  if(!('serviceWorker' in navigator)||location.protocol==='file:') return;
+  const register=()=>{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); };
+  if(document.readyState==='complete') register();
+  else window.addEventListener('load', register, {once:true});
+}
+
 // ============================================================
 // NAV
 // ============================================================
@@ -8069,8 +8270,8 @@ function setView(view, el){
     if (!item.getAttribute('onclick')?.includes('toggleFocus')) item.classList.remove('active');
   });
   if (el) el.classList.add('active');
-
-  if (window.innerWidth <= 768) document.getElementById('sidebar')?.classList.remove('open');
+  syncMobileNavActive(view);
+  closeSidebar();
   if (view === 'notes') setTimeout(()=>document.getElementById('notes-textarea')?.focus(), 120);
   if (view === 'translator') {
     renderTranslator();
@@ -8108,7 +8309,11 @@ document.addEventListener('keydown',e=>{
     if(e.key==='Escape'||e.key==='Enter'||e.key===' '){ e.preventDefault(); dismissAlarm(); }
     return;
   }
-  if(e.key==='Escape'){closeModal();if(state.focusMode)toggleFocus();}
+  if(e.key==='Escape'){
+    closeModal();
+    if(state.focusMode) toggleFocus();
+    if(document.getElementById('sidebar')?.classList.contains('open')) closeSidebar();
+  }
 });
 
 // ============================================================
@@ -8147,6 +8352,7 @@ function bootstrapApp(){
 
 initTranslator();
 initCyberAmbient();
+initPwa();
 initAuth();
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{ loadDailyVerse(); loadDailyNews(); });
 else { loadDailyVerse(); loadDailyNews(); }

@@ -1,0 +1,27 @@
+{
+  "name": "IDespector — Painel Pessoal",
+  "short_name": "IDespector",
+  "description": "Produtividade, tarefas, hábitos, agenda e notícias do dia.",
+  "start_url": "/idespector.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0f17",
+  "theme_color": "#3b82f6",
+  "lang": "pt-BR",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/assets/idespector-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/idespector-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
