@@ -280,8 +280,9 @@ while ($listener.IsListening) {
                 if ($limitRaw -match '^\d+$') { $limit = [Math]::Min([Math]::Max([int]$limitRaw, 1), 15) }
             } catch {}
             $feeds = @(
-                @{ name = "Google News BR"; url = "https://news.google.com/rss?hl=pt-BR&gl=BR&ceid=BR:pt-419" },
                 @{ name = "G1"; url = "https://g1.globo.com/rss/g1/" },
+                @{ name = "BBC News Brasil"; url = "https://feeds.bbci.co.uk/portuguese/rss.xml" },
+                @{ name = "Google News BR"; url = "https://news.google.com/rss?hl=pt-BR&gl=BR&ceid=BR:pt-419" },
                 @{ name = "UOL"; url = "https://rss.uol.com.br/feed/index.xml" }
             )
             $newsResult = $null

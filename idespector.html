@@ -3490,8 +3490,48 @@ function applyDailyNewsToDOM(payload){
 }
 function dailyNewsOfflineMessage(){
   if(location.protocol==='file:') return `Abra pelo servidor: ${SERVER_URL}`;
-  if(isLocalDev()) return 'Execute iniciar.bat e recarregue a página.';
-  return 'Serviço de notícias indisponível. Tente novamente.';
+  return 'Não foi possível carregar as notícias. Toque em Atualizar.';
+}
+const NEWS_FEEDS_FALLBACK=[
+  {name:'G1',url:'https://g1.globo.com/rss/g1/'},
+  {name:'BBC News Brasil',url:'https://feeds.bbci.co.uk/portuguese/rss.xml'},
+];
+async function fetchNewsFromApi(limit=8){
+  const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+  const timer=ctrl?setTimeout(()=>ctrl.abort(),12000):null;
+  const res=await fetch(`/api/news/daily?limit=${limit}`,ctrl?{signal:ctrl.signal,cache:'no-store'}:{cache:'no-store'});
+  if(timer) clearTimeout(timer);
+  const data=await res.json();
+  if(!res.ok||!data.ok||!data.items?.length) throw new Error(data?.error||'Falha na API');
+  return {date:data.date||todayStr(),feed:data.feed||'',items:data.items};
+}
+async function fetchNewsViaRss2Json(limit=8){
+  for(const feed of NEWS_FEEDS_FALLBACK){
+    try{
+      const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+      const timer=ctrl?setTimeout(()=>ctrl.abort(),15000):null;
+      const res=await fetch(
+        `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`,
+        ctrl?{signal:ctrl.signal}:{}
+      );
+      if(timer) clearTimeout(timer);
+      if(!res.ok) continue;
+      const data=await res.json();
+      if(data.status!=='ok'||!data.items?.length) continue;
+      const items=data.items.slice(0,limit).map(it=>{
+        let title=String(it.title||'').trim();
+        let source=String(it.author||feed.name).trim();
+        if(title.includes(' - ')){
+          const parts=title.split(' - ');
+          source=parts.pop().trim()||source;
+          title=parts.join(' - ').trim();
+        }
+        return {title,url:it.link||'',source,publishedAt:it.pubDate||''};
+      }).filter(it=>it.title&&it.url);
+      if(items.length) return {date:todayStr(),feed:feed.name,items};
+    }catch(_){}
+  }
+  return null;
 }
 async function loadDailyNews(force=false){
   const today=todayStr();
@@ -3525,16 +3565,12 @@ async function loadDailyNews(force=false){
   statusEl.hidden=false;
   listEl.hidden=true;
   statusEl.textContent='Carregando notícias...';
+  document.getElementById('news-date').textContent=formatNewsDateLabel(today);
   try{
-    const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
-    const timer=ctrl?setTimeout(()=>ctrl.abort(),12000):null;
-    const res=await fetch('/api/news/daily?limit=8',ctrl?{signal:ctrl.signal,cache:'no-store'}:{cache:'no-store'});
-    if(timer) clearTimeout(timer);
-    const data=await res.json();
-    if(!res.ok||!data.ok||!data.items?.length){
-      throw new Error(data?.error||'Falha ao carregar notícias');
-    }
-    const payload={date:data.date||today,feed:data.feed||'',items:data.items};
+    let payload=null;
+    try{ payload=await fetchNewsFromApi(8); }
+    catch(_){ payload=await fetchNewsViaRss2Json(8); }
+    if(!payload?.items?.length) throw new Error('Sem notícias');
     applyDailyNewsToDOM(payload);
     lastRenderedNewsDate=today;
     try{localStorage.setItem(dailyNewsCacheKey(today),JSON.stringify(payload));}catch(_){}
@@ -3542,7 +3578,6 @@ async function loadDailyNews(force=false){
     statusEl.hidden=false;
     listEl.hidden=true;
     statusEl.textContent=dailyNewsOfflineMessage();
-    document.getElementById('news-date').textContent=formatNewsDateLabel(today);
   }
 }
 function renderDailyNews(){
