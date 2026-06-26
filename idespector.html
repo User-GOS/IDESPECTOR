@@ -364,15 +364,6 @@
   [data-theme="light"] .header { background: var(--bg-secondary); }
   .header.mode-compact { padding:0 var(--content-x); }
   .header.mode-compact .header-top { min-height:52px; padding:8px 0; }
-  .header.mode-compact .header-ai-context,
-  .header.mode-compact .header-quick-btns,
-  .header.mode-compact .header-chat-panel { display:none !important; }
-  .header.mode-compact .header-chat-clear { display:none; }
-  .header.mode-compact .header-ai-status { display:none; }
-  .header.mode-compact .header-ai-shell { border:none; background:transparent; }
-  .header.mode-compact .header-assistant { padding:0; }
-  .header.mode-compact .header-ai-badge { width:32px; height:32px; font-size:14px; }
-  .header.mode-compact .header-ai-name { font-size:11px; }
   .header-left { display:flex; align-items:center; gap:14px; min-width:0; }
   .greeting-tag {
     font-size:11px; color: var(--text-muted);
@@ -412,162 +403,6 @@
   }
   .header-date { font-size:10px; color: var(--text-muted); margin-top:2px; }
   .header-actions { display:flex; align-items:center; gap:8px; }
-  .header-ai-shell {
-    border-radius:0; overflow:hidden;
-    border:none;
-    border-top:1px solid var(--border);
-    background:var(--bg-primary);
-  }
-  .header-assistant { padding:14px 0 16px; }
-  .header-ai-row { display:flex; align-items:flex-start; gap:10px; }
-  .header-ai-badge {
-    width:36px; height:36px; border-radius:8px; flex-shrink:0;
-    background:var(--accent-dim);
-    border:1px solid rgba(59,130,246,0.2);
-    display:flex; align-items:center; justify-content:center;
-    font-size:14px; box-shadow:none;
-    margin-top:2px; color:var(--accent);
-  }
-  .header-ai-body { flex:1; min-width:0; }
-  .header-ai-meta {
-    display:flex; align-items:center; justify-content:space-between;
-    gap:8px; margin-bottom:6px;
-  }
-  .header-ai-meta-left { display:flex; align-items:center; gap:8px; min-width:0; }
-  .header-ai-name { font-size:12px; font-weight:700; color:var(--text-primary); }
-  .header-ai-status {
-    font-size:10px; color:var(--success); font-weight:600;
-    padding:2px 8px; border-radius:999px;
-    background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2);
-  }
-  .header-chat-clear {
-    font-size:10px; font-weight:600; padding:3px 8px; border-radius:999px;
-    background:rgba(0,0,0,0.12); border:1px solid var(--border);
-    color:var(--text-muted); cursor:pointer; transition:all .2s;
-    display:flex; align-items:center; gap:4px; flex-shrink:0;
-  }
-  .header-chat-clear:hover {
-    color:var(--danger); border-color:rgba(248,113,113,0.35);
-    background:rgba(248,113,113,0.08);
-  }
-  .header-chat-row { margin-top:0; align-items:center; }
-  .header-chat-row .chat-input {
-    min-height:36px; max-height:72px; padding:8px 12px; font-size:13px;
-    background:rgba(0,0,0,0.2); border-color:rgba(37,99,235,0.22);
-    border-radius:10px;
-  }
-  [data-theme="light"] .header-chat-row .chat-input { background:rgba(255,255,255,0.75); }
-  .header-chat-row .chat-input { width:100%; }
-  .header-quick-btns {
-    display:flex; flex-wrap:nowrap; gap:5px; margin-top:6px;
-    overflow-x:auto; padding-bottom:2px; scrollbar-width:none;
-  }
-  .header-quick-btns::-webkit-scrollbar { display:none; }
-  .header-quick-btns .quick-btn {
-    padding:5px 10px; font-size:11px; font-weight:500; flex-shrink:0; white-space:nowrap;
-    background:var(--bg-glass); border:1px solid var(--border); border-radius:6px;
-    color:var(--text-secondary); cursor:pointer; transition:all .15s;
-  }
-  .header-quick-btns .quick-btn:hover {
-    border-color:var(--border-bright); color:var(--text-primary); background:var(--bg-elevated);
-  }
-  .header-ai-context {
-    padding:10px 0 12px; border-top:1px solid var(--border);
-    background:transparent;
-  }
-  .context-line {
-    display:flex; align-items:flex-start; gap:8px;
-    font-size:11px; line-height:1.45; color:var(--text-secondary);
-  }
-  .context-dot {
-    width:6px; height:6px; border-radius:50%; background:var(--accent-2);
-    margin-top:5px; flex-shrink:0; box-shadow:0 0 8px rgba(37,99,235,0.45);
-  }
-  #header-ai-context-text strong { color:var(--text-primary); font-weight:700; }
-  .header-ai-chips {
-    display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;
-  }
-  .ai-chip {
-    font-size:10px; font-weight:600; padding:3px 8px; border-radius:999px;
-    background:rgba(0,0,0,0.15); border:1px solid var(--border); color:var(--text-muted);
-  }
-  .ai-chip.accent { color:var(--accent); border-color:rgba(37,99,235,0.28); background:var(--accent-dim); }
-  .ai-chip.warn { color:var(--warning); border-color:rgba(251,191,36,0.25); }
-  .ai-chip.clickable { cursor:pointer; transition:all .18s; }
-  .ai-chip.clickable:hover { border-color:var(--border-bright); transform:translateY(-1px); filter:brightness(1.08); }
-  .header-chat-panel {
-    max-height:0; overflow:hidden; opacity:0;
-    transition:max-height .3s ease, opacity .2s ease;
-    border-top:1px solid transparent;
-  }
-  .header-chat-panel.open {
-    max-height:min(36vh, 280px); opacity:1;
-    border-top-color:var(--border);
-  }
-  .header-chat-panel .chat-area {
-    max-height:min(32vh, 260px); min-height:0;
-    padding:8px 12px 10px; gap:6px;
-    background:transparent; border:none; border-radius:0;
-  }
-  .header-chat-panel .chat-msg {
-    max-width:100%; padding:8px 11px; font-size:12px; line-height:1.45;
-  }
-  .header-chat-panel .chat-msg.ai {
-    background:rgba(37,99,235,0.08); border-color:rgba(37,99,235,0.16);
-  }
-  .header-chat-panel .ai-header { display:none; }
-  .header-chat-panel .chat-empty {
-    text-align:center; padding:14px 8px; font-size:11px; color:var(--text-muted);
-  }
-  .header-ai-shell.expanded { border-color:rgba(37,99,235,0.32); }
-  .header.chat-expanded .header-chat-panel.open { max-height:min(62vh, 520px); }
-  .header.chat-expanded .header-chat-panel.open .chat-area { max-height:min(58vh, 500px); }
-
-  /* ASSISTENTE — chat em tela cheia */
-  .main.view-assistant {
-    display:flex; flex-direction:column;
-    height:100vh; max-height:100vh;
-    padding-bottom:16px; box-sizing:border-box;
-    overflow:hidden;
-  }
-  .main.view-assistant .header {
-    flex:1; min-height:0;
-    display:flex; flex-direction:column;
-    margin-bottom:0;
-  }
-  .main.view-assistant .header-top { flex-shrink:0; }
-  .main.view-assistant .header-ai-shell {
-    flex:1; min-height:0;
-    display:flex; flex-direction:column;
-    overflow:hidden;
-  }
-  .main.view-assistant .header-assistant,
-  .main.view-assistant .header-ai-context { flex-shrink:0; }
-  .main.view-assistant .header-chat-panel.open {
-    flex:1; min-height:0;
-    max-height:none !important;
-    display:flex; flex-direction:column;
-    overflow:hidden;
-  }
-  .main.view-assistant .header-chat-panel.open .chat-area {
-    flex:1; min-height:0;
-    max-height:none !important;
-    padding:12px 16px 16px;
-    gap:10px;
-  }
-  .main.view-assistant .header-chat-panel .chat-msg {
-    font-size:14px; padding:12px 14px; line-height:1.55;
-    max-width:min(88%, 720px);
-  }
-  .main.view-assistant .header-chat-panel .chat-msg.user { border-radius:16px 16px 6px 16px; }
-  .main.view-assistant .header-chat-panel .chat-msg.ai { border-radius:16px 16px 16px 6px; }
-  .main.view-assistant .header-chat-panel .chat-empty {
-    padding:40px 16px; font-size:13px;
-  }
-  .main.view-assistant .header-chat-row .chat-input {
-    min-height:42px; max-height:120px; font-size:14px; padding:10px 14px;
-  }
-  .main.view-assistant #main-content { display:none; }
   .theme-btn, .notif-btn {
     width:40px; height:40px; border-radius:var(--radius-md);
     background: var(--bg-glass); border: 1px solid var(--border);
@@ -1181,40 +1016,6 @@
   .textarea-field::placeholder { color:var(--text-muted); }
   .form-hint { font-size:10px; color:var(--text-muted); margin-top:4px; }
 
-  /* CHAT */
-  .ai-chat-body { display:flex; flex-direction:column; gap:10px; }
-  .chat-area {
-    max-height:200px; min-height:0; overflow-y:auto;
-    display:flex; flex-direction:column; justify-content:flex-start; align-items:stretch;
-    gap:10px; padding:2px 4px 2px 0;
-    scroll-behavior:smooth;
-  }
-  .chat-area:empty { display:none; }
-  .chat-msg {
-    max-width:92%; padding:11px 14px; border-radius:14px;
-    font-size:13px; line-height:1.55;
-    animation: fadeUp .3s ease;
-  }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-  .chat-msg.user {
-    align-self:flex-end;
-    background:linear-gradient(135deg, var(--accent), var(--accent-2));
-    color:#fff; border-radius:16px 16px 4px 16px;
-    box-shadow:0 4px 14px var(--accent-glow);
-  }
-  .chat-msg.ai {
-    align-self:flex-start;
-    background:var(--bg-glass);
-    border:1px solid var(--border);
-    color:var(--text-primary); border-radius:16px 16px 16px 4px;
-  }
-  .ai-header { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
-  .ai-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); animation:pulse 1.5s infinite; }
-  .ai-name { font-size:10px; color:var(--accent); font-weight:700; letter-spacing:.6px; }
-  .quick-btns {
-    display:flex; flex-wrap:wrap; gap:6px;
-    padding-top:4px; border-top:1px solid var(--border);
-  }
   .quick-btn {
     padding:6px 12px; border-radius:999px; font-size:11px;
     background:var(--bg-glass); border:1px solid var(--border);
@@ -1222,31 +1023,6 @@
     font-family:'Inter',sans-serif; font-weight:600;
   }
   .quick-btn:hover { border-color:var(--border-bright); background:var(--accent-dim); color:var(--text-primary); }
-  .chat-input-row {
-    display:flex; gap:8px; align-items:flex-end;
-    margin-top:2px;
-  }
-  .chat-input {
-    flex:1; background:var(--bg-glass);
-    border:1px solid var(--border); border-radius:12px;
-    padding:10px 14px; color:var(--text-primary);
-    font-family:'Inter',sans-serif; font-size:13px;
-    outline:none; resize:none; min-height:42px; max-height:100px;
-    transition:border-color .2s, box-shadow .2s;
-  }
-  .chat-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
-  .typing-indicator {
-    display:flex; gap:4px; padding:8px 14px; align-self:flex-start;
-    background: var(--bg-glass); border:1px solid var(--border);
-    border-radius:14px; width:fit-content;
-  }
-  .typing-dot {
-    width:6px; height:6px; border-radius:50%; background:var(--accent);
-    animation: typingbounce .8s ease infinite;
-  }
-  .typing-dot:nth-child(2){ animation-delay:.15s; }
-  .typing-dot:nth-child(3){ animation-delay:.3s; }
-  @keyframes typingbounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
 
   /* AGENDA */
   #agenda-card { min-height:340px; display:flex; flex-direction:column; }
@@ -1974,11 +1750,6 @@
     .header-time { font-size:16px; }
     .header-time-block { display:none; }
     .greeting-main { font-size:14px; }
-    .header-assistant { padding:8px 10px; }
-    .header-ai-badge { width:32px; height:32px; font-size:14px; }
-    .header-ai-name { font-size:11px; }
-    .header-ai-status { display:none; }
-    .header-quick-btns .quick-btn:nth-child(n+6) { display:none; }
     .integrations-trigger span:last-child { display:none; }
     .dashboard-bento, .dashboard-balanced { grid-template-columns:1fr; }
   }
@@ -2606,9 +2377,6 @@
   <div class="nav-item active" onclick="setView('dashboard', this)" title="Dashboard">
     <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span><span class="nav-label">Dashboard</span>
   </div>
-  <div class="nav-item" onclick="setView('assistant', this)" title="Assistente IA">
-    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="nav-label">Assistente IA</span>
-  </div>
   <div class="nav-item" onclick="state.taskFilter=null;setView('tasks', this)" title="Tarefas">
     <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="nav-label">Tarefas</span>
   </div>
@@ -2701,48 +2469,6 @@
       </div>
     </div>
   </div>
-  <div class="header-ai-shell" id="header-ai-shell">
-    <div class="header-assistant">
-      <div class="header-ai-row">
-        <div class="header-ai-badge" title="Assistente IDespector"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-        <div class="header-ai-body">
-          <div class="header-ai-meta">
-            <div class="header-ai-meta-left">
-              <span class="header-ai-name">Assistente IDespector</span>
-              <span class="header-ai-status">Online</span>
-            </div>
-            <button type="button" class="header-chat-clear" onclick="clearChat()" title="Limpar conversa">Limpar</button>
-          </div>
-          <div class="chat-input-row header-chat-row">
-            <textarea class="chat-input" id="chat-input" placeholder="Pergunte algo — Enter para enviar, Shift+Enter para nova linha" rows="1"
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
-          </div>
-          <div class="header-quick-btns">
-            <div class="quick-btn" onclick="assistantQuick('hoje')">Hoje</div>
-            <div class="quick-btn" onclick="assistantQuick('tarefa')">Tarefa</div>
-            <div class="quick-btn" onclick="assistantQuick('alarme')">Alarme</div>
-            <div class="quick-btn" onclick="assistantQuick('lembrete')">Lembrete</div>
-            <div class="quick-btn" onclick="assistantQuick('agenda')">Agenda</div>
-            <div class="quick-btn" onclick="assistantQuick('notas')">Notas</div>
-            <div class="quick-btn" onclick="assistantQuick('atrasadas')">Atrasadas</div>
-            <div class="quick-btn" onclick="assistantQuick('foco')">Foco</div>
-            <div class="quick-btn" onclick="assistantQuick('pomodoro')">Pomodoro</div>
-            <div class="quick-btn" onclick="assistantQuick('ajuda')">Ajuda</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="header-ai-context" id="header-ai-context">
-      <div class="context-line">
-        <span class="context-dot"></span>
-        <span id="header-ai-context-text">Carregando contexto...</span>
-      </div>
-      <div class="header-ai-chips" id="header-ai-chips"></div>
-    </div>
-    <div class="header-chat-panel" id="header-chat-panel">
-      <div class="chat-area" id="chat-area"></div>
-    </div>
-  </div>
 </header>
 
 <!-- CONTENT -->
@@ -2784,9 +2510,9 @@
       <span class="qs-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
       <span class="qs-label"><span class="qs-title">Lembrete</span></span>
     </button>
-    <button class="quick-strip-btn" onclick="expandHeaderChat(true)">
-      <span class="qs-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
-      <span class="qs-label"><span class="qs-title">Assistente</span></span>
+    <button class="quick-strip-btn" onclick="navTo('notes')">
+      <span class="qs-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span>
+      <span class="qs-label"><span class="qs-title">Notas</span></span>
     </button>
     <button class="quick-strip-btn" onclick="navTo('productivity');startPomodoro()">
       <span class="qs-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
@@ -3442,7 +3168,7 @@ async function enterApp(user,remember){
   document.getElementById('auth-screen')?.classList.add('hidden');
   updateAuthUserUI();
   if(!appBootstrapped) bootstrapApp();
-  else{load();renderAll();initChat();updateClock();}
+  else{load();renderAll();updateClock();}
   showToast('👋','Bem-vindo',`Olá, ${user.name}!`);
 }
 function showAuthScreen(){
@@ -3927,7 +3653,7 @@ function updateClock(){
   const h=now.getHours();
   let gr=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
   const name=state.userName?`, <span>${state.userName}</span>`:'';
-  document.getElementById('greeting-main').innerHTML=`<span>${gr}${name}</span> — pergunte acima`;
+  document.getElementById('greeting-main').innerHTML=`<span>${gr}${name}</span>`;
   document.getElementById('greeting-tag').textContent=new Date().toLocaleString('pt-BR',{weekday:'long'}).replace(/^\w/,c=>c.toUpperCase());
   checkAlarms(now);
   tickPomodoro();
@@ -4916,7 +4642,6 @@ function renderAll(){
   renderTasks(); renderReminders(); renderAlarms(); renderAgenda(); renderNotes();
   renderPomodoro(); renderHabits(); renderGoals(); renderKanban(); renderTranslator();
   updateMetrics();
-  updateAssistantContext();
 }
 
 function getFilteredTasks(){
@@ -6796,555 +6521,6 @@ function renderFocusTasks(){
 }
 
 // ============================================================
-// CHAT — Assistente local inteligente
-// ============================================================
-function getContextLine(view){
-  const v=view||state.currentView||'dashboard';
-  const pending=state.tasks.filter(t=>!t.done).length;
-  const done=state.tasks.filter(t=>t.done).length;
-  const ev=eventsOnDate(todayStr()).length;
-  const rem=state.reminders.length;
-  const al=state.alarms.filter(a=>a.on).length;
-  const overdue=state.tasks.filter(t=>!t.done&&isTaskOverdue(t)).length;
-  const map={
-    dashboard:`<strong>Dashboard</strong> — ${pending} tarefa(s) pendente(s), ${ev} evento(s) hoje, ${rem} lembrete(s).`,
-    assistant:'<strong>Assistente</strong> — conectada aos seus dados. Use os atalhos ou digite um comando.',
-    tasks:`<strong>Tarefas</strong> — ${pending} pendente(s), ${done} concluída(s)${overdue?`, ${overdue} atrasada(s)`:''}.`,
-    alarms:al
-      ?`<strong>Despertadores</strong> — ${al} alarme(s) ativo(s).`
-      :'<strong>Despertadores</strong> — nenhum ativo. Diga "criar alarme para 7h".',
-    reminders:rem
-      ?`<strong>Lembretes</strong> — ${rem} ativo(s).`
-      :'<strong>Lembretes</strong> — nenhum ativo. Diga "criar lembrete ...".',
-    agenda:ev
-      ?`<strong>Agenda</strong> — ${ev} compromisso(s) hoje.`
-      :'<strong>Agenda</strong> — livre hoje. Diga "agendar reunião às 14h".',
-    notes:`<strong>Notas</strong> — ${(state.notes?.content||'').length} caractere(s) no bloco.`,
-    productivity:`<strong>Produtividade</strong> — ${state.pomodoro?.sessionsToday||0} pomodoro(s) hoje.`,
-    translator:`<strong>Tradutor</strong> — PT ↔ EN. Digite o texto e pressione Enter para traduzir.`,
-  };
-  return map[v]||map.dashboard;
-}
-
-function updateAssistantContext(view){
-  const textEl=document.getElementById('header-ai-context-text');
-  const chipsEl=document.getElementById('header-ai-chips');
-  if(textEl) textEl.innerHTML=getContextLine(view);
-  if(chipsEl){
-    const p=state.tasks.filter(t=>!t.done).length;
-    const ev=eventsOnDate(todayStr()).length;
-    const rem=state.reminders.length;
-    const al=state.alarms.filter(a=>a.on).length;
-    const od=state.tasks.filter(t=>!t.done&&isTaskOverdue(t)).length;
-    chipsEl.innerHTML=[
-      `<span class="ai-chip accent clickable" onclick="navTo('tasks')" title="Ver tarefas">✅ ${p} tarefas</span>`,
-      `<span class="ai-chip accent clickable" onclick="navTo('agenda')" title="Ver agenda">📅 ${ev} eventos</span>`,
-      `<span class="ai-chip clickable" onclick="navTo('reminders')" title="Ver lembretes">🔔 ${rem} lembretes</span>`,
-      `<span class="ai-chip clickable" onclick="navTo('alarms')" title="Ver alarmes">⏰ ${al} alarmes</span>`,
-      od?`<span class="ai-chip warn clickable" onclick="assistantQuick('atrasadas')" title="Ver atrasadas">⚠️ ${od} atrasadas</span>`:'',
-    ].filter(Boolean).join('');
-  }
-}
-
-function pushChatMessages(entries){
-  const msgs=[...state.chat,...entries];
-  state.chat=msgs.length>30?msgs.slice(-30):msgs;
-  save();
-}
-
-async function deliverAssistantReply(prompt,opts={}){
-  const {showUser=false,shortcut=false}=opts;
-  expandHeaderChat(true);
-  if(showUser) appendMsg('user',prompt);
-  const typingId='typing-'+Date.now();
-  const typingEl=document.createElement('div');
-  typingEl.id=typingId;
-  typingEl.innerHTML=`<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
-  typingEl.style.display='flex';
-  document.getElementById('chat-area').appendChild(typingEl);
-  scrollChat();
-  await new Promise(r=>setTimeout(r,shortcut?200:350+Math.random()*300));
-  const reply=processLocalMessage(prompt);
-  document.getElementById(typingId)?.remove();
-  const entries=showUser
-    ?[{role:'user',content:prompt},{role:'assistant',content:reply}]
-    :[{role:'assistant',content:reply}];
-  pushChatMessages(entries);
-  appendMsg('ai',reply);
-  updateAssistantContext();
-  return reply;
-}
-
-function assistantAsk(prompt){
-  return deliverAssistantReply(prompt,{showUser:false,shortcut:true});
-}
-
-function assistantQuick(type){
-  const actions={
-    hoje:()=>assistantAsk('O que tenho para hoje?'),
-    atrasadas:()=>{navToTasks('overdue');assistantAsk('Quais tarefas estão atrasadas?');},
-    ajuda:()=>assistantAsk('ajuda'),
-    organizar:()=>assistantAsk('organizar meu dia'),
-    foco:()=>assistantAsk('modo foco'),
-    pomodoro:()=>{startPomodoro();navTo('productivity');},
-    habitos:()=>navTo('productivity'),
-    metas:()=>navTo('productivity'),
-    notas:()=>navTo('notes'),
-    tarefa:()=>{openModal('task');updateAssistantContext();},
-    alarme:()=>{openModal('alarm');updateAssistantContext();},
-    lembrete:()=>{openModal('reminder');updateAssistantContext();},
-    agenda:()=>navigateToView('agenda'),
-  };
-  actions[type]?.();
-}
-
-function sendQuick(text){
-  assistantAsk(text);
-}
-function expandHeaderChat(force){
-  const panel=document.getElementById('header-chat-panel');
-  const header=document.getElementById('main-header');
-  const shell=document.getElementById('header-ai-shell');
-  if(!panel) return;
-  panel.classList.add('open');
-  if(header) header.classList.add('chat-expanded');
-  if(shell) shell.classList.add('expanded');
-  if(force) setTimeout(()=>document.getElementById('chat-input')?.focus(),80);
-}
-function collapseHeaderChat(){
-  if(state.currentView==='assistant') return;
-  const panel=document.getElementById('header-chat-panel');
-  const header=document.getElementById('main-header');
-  const shell=document.getElementById('header-ai-shell');
-  if(panel) panel.classList.remove('open');
-  if(header) header.classList.remove('chat-expanded');
-  if(shell) shell.classList.remove('expanded');
-}
-
-function normText(t){
-  return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-}
-
-function detectUserName(text){
-  const raw=normText(text);
-  const patterns=[
-    /(?:me chamo|meu nome e|pode me chamar de)\s+([a-zA-Z]+)/i,
-    /^sou\s+(?:a|o)?\s*([a-zA-Z]+)$/i,
-    /^eu sou\s+(?:a|o)?\s*([a-zA-Z]+)$/i,
-    /^me chamo\s+([a-zA-Z]+)$/i,
-  ];
-  for(const p of patterns){
-    const m=raw.match(p);
-    if(m) return m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
-  }
-  return null;
-}
-
-function isCreateIntent(n){
-  return /(?:cri|crie|criar|novo|nova|adicion|configur|agend|marc|defin|quero|preciso|faca|fazer|coloc|registr|program)/.test(n);
-}
-function isListIntent(n){
-  return /(?:list|quais|mostr|ver|exib|ativ|tenho|quantos|resumo|me\s+diga)/.test(n);
-}
-function isNavIntent(n){
-  return /(?:abrir|ir\s+para|mostrar|naveg|ver\s+tela|acess)/.test(n);
-}
-
-function parseTimeFromText(text){
-  const t=text.toLowerCase();
-  let m=t.match(/(?:as\s+|para\s+)?(\d{1,2})\s*[h:]\s*(\d{2})?\b/);
-  if(!m) m=t.match(/\b(\d{1,2}):(\d{2})\b/);
-  if(!m) m=t.match(/(\d{1,2})\s*(?:da\s+)?(?:manha|manhã)/);
-  if(!m) m=t.match(/(\d{1,2})\s*(?:da\s+)?tarde/);
-  if(!m) m=t.match(/(\d{1,2})\s*(?:da\s+)?noite/);
-  if(!m) return null;
-  let hh=parseInt(m[1],10);
-  let mm=m[2]!=null?parseInt(m[2],10):0;
-  if(/tarde|noite/.test(t)&&hh<12) hh+=12;
-  hh=Math.min(23,Math.max(0,hh));
-  mm=Math.min(59,Math.max(0,mm));
-  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
-}
-
-function parseDateFromText(text){
-  const n=normText(text);
-  if(n.includes('amanha')){const d=new Date();d.setDate(d.getDate()+1);return localDateStr(d);}
-  if(n.includes('depois de amanha')){const d=new Date();d.setDate(d.getDate()+2);return localDateStr(d);}
-  const iso=text.match(/\b(\d{4}-\d{2}-\d{2})\b/);
-  if(iso) return iso[1];
-  const br=text.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
-  if(br){
-    const y=br[3]?(br[3].length===2?'20'+br[3]:br[3]):new Date().getFullYear();
-    return `${y}-${String(br[2]).padStart(2,'0')}-${String(br[1]).padStart(2,'0')}`;
-  }
-  return todayStr();
-}
-
-function parsePriority(text){
-  const t=normText(text);
-  if(t.includes('critica')||t.includes('urgente')) return 'critica';
-  if(t.includes('alta')) return 'alta';
-  if(t.includes('baixa')) return 'baixa';
-  return 'media';
-}
-
-function parseCategory(text){
-  const n=normText(text);
-  const map=[
-    ['trabalho','Trabalho'],['reuniao','Reuniões'],['reunioes','Reuniões'],
-    ['igreja','Igreja'],['estudo','Estudos'],['saude','Saúde'],
-    ['casa','Casa'],['financ','Finanças'],['familia','Família'],
-    ['projeto','Projetos'],['compra','Compras'],['viagem','Viagem'],
-    ['lazer','Lazer'],['marketing','Marketing'],['pessoal','Pessoal'],
-  ];
-  for(const [k,v] of map) if(n.includes(k)) return v;
-  return 'Pessoal';
-}
-
-function stripTimeAndMeta(text){
-  return text
-    .replace(/cri(e|ar)?\s+(um\s+)?(alarme|despertador|lembrete|tarefa|evento|compromisso)\s+(para\s+)?/gi,'')
-    .replace(/lembr(ar|e)\s+(de\s+)?/gi,'')
-    .replace(/agend(ar|e)\s+/gi,'')
-    .replace(/(?:as\s+|para\s+)?\d{1,2}\s*[h:]\s*\d{0,2}\b/gi,'')
-    .replace(/\b\d{1,2}:\d{2}\b/g,'')
-    .replace(/\b(hoje|amanha|depois de amanha)\b/gi,'')
-    .replace(/\b(alta|media|baixa|critica|urgente|trabalho|igreja|estudos|saude|pessoal)\b/gi,'')
-    .replace(/\b(para mim|pra mim)\b/gi,'')
-    .trim();
-}
-
-function addTaskFromChat(text,cat){
-  const c=cat||parseCategory(text);
-  const label=stripTimeAndMeta(text)||text;
-  if(!label||label.length<2) return null;
-  const priority=parsePriority(text);
-  const dueDate=parseDateFromText(text);
-  const dueTime=parseTimeFromText(text);
-  const task={id:Date.now(),text:label,cat:c,priority,done:false};
-  if(dueDate&&dueDate!==todayStr()) task.dueDate=dueDate;
-  else if(normText(text).includes('amanha')) task.dueDate=dueDate;
-  if(dueTime) task.dueTime=dueTime;
-  state.tasks.push(task);
-  save();renderAll();
-  let extra=` [${c}] · ${priorityLabel(priority)}`;
-  if(task.dueDate) extra+=` · ${formatTaskDue(task)}`;
-  return `✅ Tarefa criada: **"${label}"**${extra}.`;
-}
-
-function addReminderFromChat(text,time,priority,date){
-  const label=stripTimeAndMeta(text);
-  if(!label||label.length<2) return null;
-  state.reminders.push({id:Date.now(),text:label,date:date||todayStr(),time:time||'09:00',priority:priority||'media'});
-  save();renderAll();
-  const when=(date||todayStr())===todayStr()?'hoje':date;
-  return `🔔 Lembrete criado para **${when} às ${time||'09:00'}**: "${label}" (${priority||'média'}).`;
-}
-
-function addAlarmFromChat(label,time){
-  const name=label&&label.length>1?label:'Alarme';
-  state.alarms.push({id:Date.now(),time,label:name,on:true});
-  save();renderAll();
-  return `⏰ Alarme configurado para **${time}** — "${name}". Vou tocar na hora certa!`;
-}
-
-function addEventFromChat(title,time,date){
-  const name=stripTimeAndMeta(title)||title;
-  if(!name||name.length<2) return null;
-  const d=date||todayStr();
-  const t=time||'09:00';
-  state.events.push({id:Date.now(),title:name,date:d,time:t,sub:'',status:'confirmado'});
-  save();renderAll();
-  const when=d===todayStr()?'hoje':new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
-  return `📅 Evento **"${name}"** agendado para ${when} às ${t}.`;
-}
-
-function completeTaskFromChat(text){
-  const n=normText(text);
-  const pending=state.tasks.filter(t=>!t.done);
-  if(!pending.length) return 'Você não tem tarefas pendentes. 🎉';
-  for(const task of pending){
-    const tn=normText(task.text);
-    if(n.includes(tn)||tn.split(' ').filter(w=>w.length>3).some(w=>n.includes(w))){
-      task.done=true;save();renderTasks();updateMetrics();
-      return `✅ Tarefa concluída: **"${task.text}"**`;
-    }
-  }
-  if(pending.length===1){
-    pending[0].done=true;save();renderTasks();updateMetrics();
-    return `✅ Tarefa concluída: **"${pending[0].text}"**`;
-  }
-  return `Qual tarefa concluir?\n${pending.map(t=>`• ${t.text}`).join('\n')}`;
-}
-
-function navigateToView(view){ navTo(view); }
-
-function buildTodayOverview(){
-  const events=eventsOnDate(todayStr()).map(e=>`• ${e.time} — ${e.title}`).join('\n')||'• Nenhum compromisso agendado.';
-  const pending=state.tasks.filter(t=>!t.done).map(t=>`• ${t.text} [${t.cat}]`).join('\n')||'• Nenhuma tarefa pendente.';
-  const reminders=state.reminders.map(r=>`• ${r.time} — ${r.text} (${r.priority})`).join('\n')||'• Nenhum lembrete ativo.';
-  return `📅 **Agenda de hoje:**\n${events}\n\n✅ **Tarefas pendentes:**\n${pending}\n\n🔔 **Lembretes:**\n${reminders}`;
-}
-
-function buildProductivityReport(){
-  const done=state.tasks.filter(t=>t.done).length;
-  const total=state.tasks.length;
-  const pct=total?Math.round(done/total*100):0;
-  const pending=state.tasks.filter(t=>!t.done).length;
-  const critical=state.reminders.filter(r=>r.priority==='critica'||r.priority==='alta').length;
-  const pomo=state.pomodoro?.sessionsToday||0;
-  const habitsDone=state.habits?.filter(habitDoneToday).length||0;
-  const habitsTotal=state.habits?.length||0;
-  const goalsOnTrack=state.goals?.filter(g=>goalProgress(g)>=50).length||0;
-  return `📊 **Produtividade:**\n• ${done}/${total} tarefas concluídas (${pct}%)\n• ${pending} tarefa(s) pendente(s)\n• ${critical} lembrete(s) de alta prioridade\n• 🍅 ${pomo} pomodoro(s) hoje · ${state.pomodoro?.totalMin||0} min de foco\n• 🔁 ${habitsDone}/${habitsTotal} hábitos concluídos hoje\n• 🎯 ${state.goals?.length||0} meta(s) · ${goalsOnTrack} acima de 50%\n\n${pct>=70?'Excelente ritmo! Continue assim. 🚀':pct>=40?'Bom progresso. Foque nas tarefas prioritárias.':'Há espaço para melhorar — que tal um Pomodoro?'}`;
-}
-
-function buildOrganizePlan(){
-  const urgent=state.reminders.filter(r=>r.priority==='critica'||r.priority==='alta');
-  const pending=state.tasks.filter(t=>!t.done);
-  const nextEvent=eventsOnDate(todayStr()).slice().sort((a,b)=>a.time.localeCompare(b.time))[0];
-  let plan='🗂 **Plano sugerido para hoje:**\n';
-  if(urgent.length) plan+=`\n1. Resolver lembretes urgentes:\n${urgent.map(r=>`   • ${r.time} — ${r.text}`).join('\n')}`;
-  if(nextEvent) plan+=`\n${urgent.length?2:1}. Próximo compromisso: ${nextEvent.time} — ${nextEvent.title}`;
-  if(pending.length) plan+=`\n${urgent.length?3:2}. Tarefas prioritárias:\n${pending.slice(0,3).map((t,i)=>`   ${i+1}. ${t.text}`).join('\n')}`;
-  plan+='\n\n💡 Use o Modo Foco para manter a concentração nas tarefas mais importantes.';
-  return plan;
-}
-
-function getViewSummary(view){
-  const pending=state.tasks.filter(t=>!t.done).length;
-  const done=state.tasks.filter(t=>t.done).length;
-  const evToday=eventsOnDate(todayStr()).length;
-  const activeAlarms=state.alarms.filter(a=>a.on).length;
-  const map={
-    dashboard:`🏠 **Dashboard** — ${pending} tarefa(s) pendente(s), ${evToday} evento(s) hoje, ${state.reminders.length} lembrete(s).`,
-    assistant:'💬 **Assistente** pronto. Pergunte ou use os atalhos — crio tarefas, alarmes, lembretes e eventos por aqui.',
-    tasks:`📋 **Tarefas** — ${pending} pendente(s), ${done} concluída(s). Diga "criar tarefa ..." ou "concluir tarefa".`,
-    alarms:activeAlarms
-      ?`⏰ **Despertadores** — ${activeAlarms} alarme(s) ativo(s):\n${state.alarms.filter(a=>a.on).map(a=>`• ${a.time} — ${a.label}`).join('\n')}`
-      :'⏰ **Despertadores** — nenhum ativo. Diga "criar alarme para 7h".',
-    reminders:state.reminders.length
-      ?`🔔 **Lembretes** — ${state.reminders.length} ativo(s):\n${state.reminders.map(r=>`• ${r.time} — ${r.text}`).join('\n')}`
-      :'🔔 **Lembretes** — nenhum ativo. Diga "criar lembrete ...".',
-    agenda:evToday
-      ?`📅 **Agenda de hoje** — ${evToday} compromisso(s):\n${eventsOnDate(todayStr()).sort((a,b)=>a.time.localeCompare(b.time)).map(e=>`• ${e.time} — ${e.title}`).join('\n')}`
-      :'📅 **Agenda** — nada para hoje. Diga "agendar reunião às 14h".',
-    notes:`📝 **Notas** — ${(state.notes?.content||'').length} caractere(s) no bloco.`,
-    productivity:`📊 **Produtividade** — ${state.pomodoro?.sessionsToday||0} pomodoro(s), ${state.habits?.filter(habitDoneToday).length||0}/${state.habits?.length||0} hábitos hoje, ${state.goals?.length||0} meta(s).`,
-    translator:`🌐 **Tradutor** — PT ↔ EN. Abra a aba Tradutor para traduzir textos.`,
-  };
-  return map[view]||map.dashboard;
-}
-
-function processLocalMessage(text){
-  const n=normText(text);
-  const name=detectUserName(text);
-  if(name){
-    state.userName=name;
-    save();
-    updateClock();
-    return `Prazer, ${name}! 🎉 Anotei seu nome.\n\nPosso criar tarefas, alarmes, lembretes, eventos, mostrar sua agenda e muito mais.`;
-  }
-
-  if(/^(oi|ola|hey|hi|e ai|bom dia|boa tarde|boa noite)\b/.test(n)){
-    const h=new Date().getHours();
-    const gr=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
-    const who=state.userName?`, ${state.userName}`:'';
-    return `${gr}${who}! Sou o cérebro do IDespector — conectada a tudo no site.\n\nPergunte, clique nos menus ou peça para criar algo.`;
-  }
-
-  if(n.includes('ajuda')||n.includes('o que voce faz')||n.includes('comandos')){
-    return `**Comandos que entendo:**\n• 📅 "O que tenho para hoje?" / agenda\n• ✅ "Criar tarefa revisar relatório"\n• 🔔 "Criar lembrete pagar conta às 18h"\n• ⏰ "Criar alarme para 20h" / despertador 7h\n• 📆 "Agendar reunião às 10h"\n• 🍅 "Iniciar pomodoro" / produtividade\n• 🔁 Hábitos e metas no menu Produtividade\n• ✔️ "Concluir tarefa" / tarefas pendentes\n• 🎯 "Modo foco" / sair do foco\n• 📧 "Abrir outlook" / sincronizar outlook\n• 📊 Produtividade / organizar meu dia\n• 🧭 "Abrir tarefas" / ir para alarmes`;
-  }
-
-  if((n.includes('modo foco')||n.includes('ativar foco'))&&!state.focusMode){
-    toggleFocus();
-    return '🎯 **Modo Foco ativado!** Diga "sair do foco" para desativar.';
-  }
-  if(n.includes('sair do foco')&&state.focusMode){
-    toggleFocus();
-    return 'Modo Foco desativado. Bom trabalho!';
-  }
-
-  // —— CRIAR (antes de listar) ——
-  if((n.includes('alarme')||n.includes('despertador'))&&isCreateIntent(n)){
-    const time=parseTimeFromText(text);
-    if(!time){openModal('alarm');return '⏰ Qual horário do alarme? Abri o formulário — ou diga "criar alarme para 20h".';}
-    const label=stripTimeAndMeta(text);
-    return addAlarmFromChat(label,time);
-  }
-
-  if((n.includes('lembrete')||n.includes('lembrar'))&&isCreateIntent(n)){
-    const time=parseTimeFromText(text)||'09:00';
-    const priority=parsePriority(text);
-    const date=parseDateFromText(text);
-    const result=addReminderFromChat(text,time,priority,date);
-    if(result) return result;
-    openModal('reminder');
-    return '🔔 O que devo lembrar? Ex: "criar lembrete ligar ao médico às 14h".';
-  }
-
-  if((n.includes('evento')||n.includes('compromisso')||n.includes('agenda'))&&isCreateIntent(n)&&!isListIntent(n)){
-    const time=parseTimeFromText(text)||'09:00';
-    const date=parseDateFromText(text);
-    const result=addEventFromChat(text,time,date);
-    if(result) return result;
-    openModal('event');
-    return '📅 Qual o compromisso? Ex: "agendar reunião com cliente às 11h".';
-  }
-
-  if((n.includes('tarefa')||n.includes('task'))&&isCreateIntent(n)){
-    const cat=parseCategory(text);
-    const result=addTaskFromChat(text,cat);
-    if(result) return result;
-    openModal('task');
-    return '📝 Descreva a tarefa. Ex: "criar tarefa enviar relatório".';
-  }
-
-  if(/conclu|finaliz|feito|complet|marcar/.test(n)&&(n.includes('tarefa')||state.tasks.some(t=>!t.done&&n.includes(normText(t.text).split(' ')[0])))){
-    return completeTaskFromChat(text);
-  }
-
-  if(/zer(ar|e)\s+(o\s+)?game|resetar\s+(o\s+)?game|reiniciar\s+(o\s+)?game/.test(n)){
-    resetGamificationGame();
-    return '🎮 **Game zerado!** Nível, XP e conquistas reiniciados. Comece de novo nos hábitos!';
-  }
-
-  // —— NAVEGAÇÃO ——
-  if(isNavIntent(n)||/^(abrir|ir|ver)\b/.test(n)){
-    if(n.includes('tarefa')){navigateToView('tasks');return getViewSummary('tasks');}
-    if(n.includes('alarme')||n.includes('despertador')){navigateToView('alarms');return getViewSummary('alarms');}
-    if(n.includes('lembrete')){navigateToView('reminders');return getViewSummary('reminders');}
-    if(n.includes('agenda')||n.includes('evento')||n.includes('calendario')){navigateToView('agenda');return getViewSummary('agenda');}
-    if(n.includes('dashboard')||n.includes('inicio')||n.includes('painel')){navigateToView('dashboard');return getViewSummary('dashboard');}
-    if(n.includes('assistente')||n.includes('chat')){navigateToView('assistant');return getViewSummary('assistant');}
-    if(n.includes('nota')||n.includes('bloco')){navigateToView('notes');return getViewSummary('notes');}
-    if(n.includes('pomodoro')||n.includes('habito')||n.includes('meta')||n.includes('kanban')||n.includes('produtividade')){navigateToView('productivity');return getViewSummary('productivity');}
-    if(n.includes('tradutor')||n.includes('traducao')||n.includes('traduzir')||n.includes('translate')||n.includes('ingles')){navigateToView('translator');return getViewSummary('translator');}
-    if(n.includes('outlook')||n.includes('microsoft')){openOutlookSettings();return '📧 **Outlook** — painel de configuração aberto.';}
-  }
-
-  if((n.includes('pomodoro')||n.includes('iniciar foco'))&&!n.includes('sair')){
-    startPomodoro();
-    return '🍅 **Pomodoro iniciado!** 25 minutos de foco. Diga "produtividade" para ver o painel.';
-  }
-
-  // —— CONSULTAS ——
-  if(n.includes('produtividade')||n.includes('desempenho')||n.includes('relatorio')){
-    return buildProductivityReport();
-  }
-  if(n.includes('organiz')||n.includes('prioridad')||n.includes('planej')){
-    return buildOrganizePlan();
-  }
-  if(n.includes('atrasad')){
-    navToTasks('overdue');
-    const overdue=state.tasks.filter(t=>!t.done&&isTaskOverdue(t));
-    if(overdue.length) return `⚠️ **Tarefas atrasadas (${overdue.length}):**\n${overdue.map(t=>`• ${t.text} [${t.cat}] — ${formatTaskDue(t)}`).join('\n')}`;
-    if(n.includes('tarefa')) return 'Nenhuma tarefa atrasada por prazo. 🎉';
-  }
-  if(n.includes('pendente')&&n.includes('tarefa')){
-    const pending=state.tasks.filter(t=>!t.done);
-    if(!pending.length) return 'Ótima notícia! Você não tem tarefas pendentes. 🎉';
-    return `⚠️ **Tarefas pendentes (${pending.length}):**\n${pending.map(t=>`• ${t.text} [${t.cat}]${t.dueDate?' — '+formatTaskDue(t):''}`).join('\n')}`;
-  }
-  if(n.includes('tarefa')&&isListIntent(n)){
-    const pending=state.tasks.filter(t=>!t.done);
-    const done=state.tasks.filter(t=>t.done);
-    return `✅ **Pendentes (${pending.length}):**\n${pending.map(t=>`• ${t.text}`).join('\n')||'• Nenhuma'}\n\n✔️ **Concluídas (${done.length}):**\n${done.map(t=>`• ${t.text}`).join('\n')||'• Nenhuma'}`;
-  }
-  if(n.includes('lembrete')&&isListIntent(n)){
-    if(!state.reminders.length) return 'Nenhum lembrete ativo no momento.';
-    return `🔔 **Lembretes ativos:**\n${state.reminders.map(r=>`• [${r.priority.toUpperCase()}] ${r.time} — ${r.text}`).join('\n')}`;
-  }
-  if((n.includes('alarme')||n.includes('despertador'))&&isListIntent(n)){
-    const active=state.alarms.filter(a=>a.on);
-    if(!active.length) return 'Nenhum alarme ativo no momento.';
-    return `⏰ **Alarmes ativos:**\n${active.map(a=>`• ${a.time} — ${a.label}`).join('\n')}`;
-  }
-  if((n.includes('alarme')||n.includes('despertador'))&&!isCreateIntent(n)){
-    const active=state.alarms.filter(a=>a.on);
-    if(!active.length) return 'Nenhum alarme configurado. Diga **"criar alarme para 20h"** para adicionar um.';
-    return `⏰ **Alarmes ativos:**\n${active.map(a=>`• ${a.time} — ${a.label}`).join('\n')}`;
-  }
-  if((n.includes('sincroniz')||n.includes('sync'))&&n.includes('outlook')){
-    syncOutlookCalendar(true);
-    return '📧 Sincronização com Outlook iniciada. Verifique a agenda.';
-  }
-  if((n.includes('abrir')||n.includes('ir'))&&n.includes('outlook')){
-    openOutlook();
-    return '📧 Abrindo Outlook Web no navegador.';
-  }
-  if(n.includes('hoje')||n.includes('agenda')||n.includes('compromisso')||n.includes('para hoje')||n.includes('resumo')){
-    return buildTodayOverview();
-  }
-  if(n.includes('hora')||n.includes('que horas')){
-    const now=new Date();
-    return `🕐 Agora são **${now.toLocaleTimeString('pt-BR')}** — ${now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}.`;
-  }
-  if(n.includes('obrigad')||n.includes('valeu')||n.includes('thanks')){
-    return 'Por nada! Estou aqui sempre que precisar. 😊';
-  }
-
-  // —— FALLBACK INTELIGENTE ——
-  if(parseTimeFromText(text)&&text.length<40){
-    const time=parseTimeFromText(text);
-    return addAlarmFromChat('Alarme',time);
-  }
-  if(text.length>8&&!isListIntent(n)&&!/(alarme|despertador|lembrete|evento|agenda|compromisso)/.test(n)){
-    const cat=parseCategory(text);
-    const guess=addTaskFromChat(text,cat);
-    if(guess) return guess+'\n\n_(Se não era uma tarefa, reformule com "criar lembrete" ou "criar alarme")_';
-  }
-
-  const who=state.userName?state.userName+', ':'';
-  return `${who}Não entendi bem. Tente:\n• "criar alarme para 20h"\n• "o que tenho para hoje?"\n• "tarefas pendentes"\n• "abrir lembretes"\n\nDigite **ajuda** para ver todos os comandos.`;
-}
-
-async function sendMessage(){
-  const input=document.getElementById('chat-input');
-  const text=input?.value.trim();
-  if(!text)return;
-  input.value='';
-  try{
-    await deliverAssistantReply(text,{showUser:true});
-  }catch(err){
-    appendMsg('ai','Desculpe, ocorreu um erro interno. Tente novamente ou use os atalhos acima.');
-    console.error('IDespector chat error:',err);
-  }
-}
-
-function appendMsg(role,text){
-  const area=document.getElementById('chat-area');
-  area?.querySelector('.chat-empty')?.remove();
-  const el=document.createElement('div');
-  el.className='chat-msg '+role;
-  if(role==='ai'){
-    const html=text
-      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-      .replace(/\n/g,'<br>');
-    el.innerHTML=`<div class="ai-header"><div class="ai-dot"></div><span class="ai-name">IDESPECTOR</span></div>${html}`;
-  }else{
-    el.textContent=text;
-  }
-  area.appendChild(el);
-  scrollChat();
-}
-function scrollChat(){const a=document.getElementById('chat-area');if(a)a.scrollTop=a.scrollHeight;}
-function clearChat(){
-  const area=document.getElementById('chat-area');
-  const hasHistory=(state.chat?.length||0)>0;
-  if(hasHistory&&!confirm('Limpar todo o histórico da conversa?')) return;
-  state.chat=[];
-  if(area) area.innerHTML='';
-  save();
-  const h=new Date().getHours();
-  const gr=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
-  const who=state.userName?`, ${state.userName}`:'';
-  area.innerHTML='<div class="chat-empty">💬 Suas conversas aparecem aqui. O resumo ao vivo fica acima.</div>';
-  if(hasHistory) showToast('🗑️','Chat limpo','Histórico da conversa removido.');
-}
-
-// ============================================================
 // TRADUTOR PT ↔ EN
 // ============================================================
 let translatorBusy=false;
@@ -7653,7 +6829,6 @@ const VIEW_SECTIONS = {
 const VIEW_ROWS = ['row-productivity', 'row-dashboard-top', 'row-tasks-reminders', 'row-goals-kanban', 'row-dashboard-bottom', 'row-translator'];
 const VIEW_META = {
   dashboard: { title:'Dashboard', sub:'Visão geral do seu dia' },
-  assistant: { title:'Assistente IA', sub:'Conversa em tela cheia — use os atalhos ou digite abaixo' },
   tasks: { title:'Tarefas', sub:'Lista e Kanban das suas tarefas' },
   alarms: { title:'Despertadores', sub:'Seus alarmes configurados' },
   reminders: { title:'Lembretes', sub:'Não perca nada importante' },
@@ -7668,7 +6843,6 @@ const VIEW_ACTIONS = {
   reminders: '<button class="btn btn-primary btn-sm btn-add" onclick="openModal(\'reminder\')">Novo lembrete</button>',
   alarms: '<button class="btn btn-primary btn-sm btn-add" onclick="openModal(\'alarm\')">Novo alarme</button>',
   agenda: '<button class="btn btn-secondary btn-sm" onclick="syncOutlookCalendar(true)" title="Sincronizar Outlook">↻ Sincronizar</button><button class="btn btn-primary btn-sm btn-add" onclick="openModal(\'event\')">Novo evento</button>',
-  assistant: '<button class="btn btn-secondary btn-sm" onclick="expandHeaderChat(true)">💬 Abrir chat</button><button class="btn btn-soft btn-sm" onclick="assistantQuick(\'organizar\')">🗂 Organizar dia</button>',
   productivity: '<button class="btn btn-primary btn-sm" onclick="startPomodoro()">🍅 Iniciar Pomodoro</button><button class="btn btn-secondary btn-sm btn-add" onclick="openModal(\'habit\')">Hábito</button><button class="btn btn-secondary btn-sm btn-add" onclick="openModal(\'goal\')">Meta</button>',
   translator: '<button class="btn btn-primary btn-sm" onclick="runTranslation()">🌐 Traduzir</button><button class="btn btn-secondary btn-sm" onclick="swapTranslatorDir()">⇄ Inverter</button><button class="btn btn-soft btn-sm" onclick="copyTranslation()">📋 Copiar</button>',
 };
@@ -7710,14 +6884,8 @@ function setView(view, el){
   if(subEl) subEl.textContent=meta.sub;
   if(actionsEl) actionsEl.innerHTML=VIEW_ACTIONS[view]||'';
 
-  const mainEl=document.querySelector('.main');
-  if(mainEl) mainEl.classList.toggle('view-assistant', view==='assistant');
-
   const headerEl=document.getElementById('main-header');
   if(headerEl) headerEl.classList.toggle('mode-compact', view==='dashboard');
-
-  if (view === 'assistant') expandHeaderChat(true);
-  else collapseHeaderChat();
 
   const content = document.getElementById('main-content');
   if (content) {
@@ -7736,14 +6904,12 @@ function setView(view, el){
   if (el) el.classList.add('active');
 
   if (window.innerWidth <= 768) document.getElementById('sidebar')?.classList.remove('open');
-  if (view === 'assistant') setTimeout(()=>expandHeaderChat(true), 120);
   if (view === 'notes') setTimeout(()=>document.getElementById('notes-textarea')?.focus(), 120);
   if (view === 'translator') {
     renderTranslator();
     setTimeout(()=>document.getElementById('translator-input')?.focus(), 120);
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  updateAssistantContext(view);
 }
 
 // ============================================================
@@ -7778,18 +6944,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeModal();if(state.focusMode)toggleFocus();}
 });
 
-// Welcome message
-function initChat(){
-  const area=document.getElementById('chat-area');
-  if(area) area.innerHTML='';
-  if(!state.chat||state.chat.length===0){
-    area.innerHTML='<div class="chat-empty">💬 Suas conversas aparecem aqui. O resumo ao vivo fica acima.</div>';
-  }else{
-    state.chat.forEach(m=>{if(m.role==='user')appendMsg('user',m.content);else appendMsg('ai',m.content);});
-  }
-  updateAssistantContext();
-}
-
 // ============================================================
 // INIT
 // ============================================================
@@ -7808,8 +6962,6 @@ function bootstrapApp(){
   updateClock();
   setInterval(updateClock,1000);
   renderAll();
-  initChat();
-  collapseHeaderChat();
   updateWhatsAppStatus();
   updateTelegramStatus();
   updateLinkedInStatus();
