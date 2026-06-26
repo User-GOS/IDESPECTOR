@@ -217,6 +217,11 @@
   .dashboard-balanced .card,
   .dashboard-bento .card { display:flex; flex-direction:column; min-height:280px; }
   .dashboard-bento #agenda-card { min-height:0; }
+  #clock-card {
+    min-height:0; align-self:start;
+    padding-bottom:18px;
+  }
+  #clock-card .card-header { margin-bottom:10px; padding-bottom:10px; }
   .card-body-scroll {
     flex:1; overflow-y:auto; min-height:100px; max-height:320px;
     padding-right:4px;
@@ -817,6 +822,10 @@
   .card-title .dot { display:none; }
 
   /* FOCO CARD */
+  #clock-card .foco-layout {
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:0; flex:0;
+  }
   .foco-layout { display:flex; align-items:center; justify-content:center; padding:8px 0; }
   .foco-info { text-align:center; min-width:0; }
   .foco-time {
@@ -2713,24 +2722,6 @@
     </div>
   </div>
 
-  <!-- ROW: Produtividade -->
-  <div class="dashboard-balanced" id="row-productivity">
-    <div class="card" id="pomodoro-card">
-      <div class="card-header">
-        <div class="card-title"><span class="dot"></span>Pomodoro</div>
-        <button class="btn btn-soft btn-sm" onclick="navTo('productivity')">Ver mais</button>
-      </div>
-      <div class="pomodoro-wrap" id="pomodoro-widget"></div>
-    </div>
-    <div class="card" id="habits-card">
-      <div class="card-header">
-        <div class="card-title"><span class="dot"></span>Hábitos de Hoje</div>
-        <button class="btn btn-primary btn-sm btn-add" onclick="openModal('habit')">Hábito</button>
-      </div>
-      <div class="card-body-scroll" id="habits-list"></div>
-    </div>
-  </div>
-
   <!-- ROW 1: Foco + Agenda -->
   <div class="dashboard-bento" id="row-dashboard-top">
     <div class="card" id="clock-card">
@@ -2756,6 +2747,24 @@
         <button class="btn btn-primary btn-sm btn-add" onclick="openModal('event')">Evento</button>
       </div>
       <div class="card-body-scroll" id="agenda-list"><div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></div><span>Nenhum compromisso hoje.</span></div></div>
+    </div>
+  </div>
+
+  <!-- ROW: Produtividade -->
+  <div class="dashboard-balanced" id="row-productivity">
+    <div class="card" id="pomodoro-card">
+      <div class="card-header">
+        <div class="card-title"><span class="dot"></span>Pomodoro</div>
+        <button class="btn btn-soft btn-sm" onclick="navTo('productivity')">Ver mais</button>
+      </div>
+      <div class="pomodoro-wrap" id="pomodoro-widget"></div>
+    </div>
+    <div class="card" id="habits-card">
+      <div class="card-header">
+        <div class="card-title"><span class="dot"></span>Hábitos de Hoje</div>
+        <button class="btn btn-primary btn-sm btn-add" onclick="openModal('habit')">Hábito</button>
+      </div>
+      <div class="card-body-scroll" id="habits-list"></div>
     </div>
   </div>
 
