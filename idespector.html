@@ -647,7 +647,7 @@
   .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
   .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:20px; }
   .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
-  #metrics-grid { grid-template-columns:repeat(7,1fr); }
+  #metrics-grid { grid-template-columns:repeat(6,1fr); }
   @media (max-width:1200px){ #metrics-grid { grid-template-columns:repeat(4,1fr); } }
   @media (max-width:900px){ #metrics-grid { grid-template-columns:repeat(3,1fr); } }
   @media (max-width:520px){ #metrics-grid { grid-template-columns:repeat(2,1fr); } }
@@ -2601,10 +2601,6 @@
     <div class="metric-card metric-alarms clickable" onclick="navTo('alarms')" title="Ver alarmes">
       <div class="metric-label">Alarmes</div>
       <div class="metric-num" id="m-alarms">0</div>
-    </div>
-    <div class="metric-card metric-pomo clickable" onclick="navTo('productivity')" title="Ver produtividade">
-      <div class="metric-label">Pomodoros</div>
-      <div class="metric-num" id="m-pomodoro">0</div>
     </div>
     <div class="metric-card metric-habits clickable" onclick="navTo('productivity')" title="Ver hábitos e XP">
       <div class="metric-label">Hábitos hoje</div>
@@ -5048,7 +5044,6 @@ function updateMetrics(){
   setMetricAnimated('m-pending',state.tasks.filter(t=>!t.done).length);
   setMetricAnimated('m-reminders',state.reminders.length);
   setMetricAnimated('m-alarms',state.alarms.filter(a=>a.on).length);
-  setMetricAnimated('m-pomodoro',state.pomodoro?.sessionsToday||0);
   if(state.habits?.length) setMetricAnimated('m-habits',`${habitsCompletedToday()}/${state.habits.length}`);
   else setMetricAnimated('m-habits','0');
   const g=getGamification();
