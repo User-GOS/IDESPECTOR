@@ -616,11 +616,17 @@
     border-radius:999px; border:1px solid rgba(255,255,255,0.16);
     background:var(--ai-chat-blue); color:#fff;
     font-family:inherit; font-size:13px; font-weight:700; letter-spacing:-0.01em;
-    cursor:pointer; pointer-events:auto;
+    cursor:grab; pointer-events:auto; touch-action:none; user-select:none;
     box-shadow:0 10px 28px rgba(37,99,235,0.38);
     transition:transform .2s var(--ease-out), box-shadow .2s, background .2s, opacity .2s;
     outline:none; -webkit-tap-highlight-color:transparent;
   }
+  .ai-chat.ai-chat-dragging .ai-chat-launcher {
+    cursor:grabbing; transform:scale(1.04);
+    box-shadow:0 16px 40px rgba(37,99,235,0.48);
+    transition:none;
+  }
+  .ai-chat.ai-chat-dragging .ai-chat-panel { transition:none; }
   .ai-chat-launcher:hover {
     background:var(--ai-chat-blue-hover);
     transform:translateY(-2px);
@@ -3513,7 +3519,7 @@
       <button type="submit" class="btn btn-primary btn-sm" id="ai-chat-send">Enviar</button>
     </form>
   </div>
-  <button type="button" class="ai-chat-launcher" id="ai-chat-fab" onclick="toggleAiChat()" title="Abrir assistente IA" aria-label="Abrir chat com IA" aria-expanded="false">
+  <button type="button" class="ai-chat-launcher" id="ai-chat-fab" title="Arraste para mover · clique para abrir" aria-label="Abrir chat com IA. Arraste para mover na tela." aria-expanded="false">
     <span class="ai-chat-launcher-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     </span>
@@ -4104,7 +4110,127 @@ function escChatText(s){
 }
 function migrateAi(){
   if(!state.ai) state.ai={apiKey:''};
+  if(state.ai.pos&&typeof state.ai.pos.x!=='number') delete state.ai.pos;
   if(!Array.isArray(state.chat)) state.chat=[];
+}
+function aiChatBottomInset(){
+  const root=document.documentElement;
+  const styles=getComputedStyle(root);
+  const nav=window.innerWidth<=768?(parseFloat(styles.getPropertyValue('--bottom-nav-h'))||58):0;
+  const safe=parseFloat(styles.getPropertyValue('--safe-bottom'))||0;
+  return nav+safe;
+}
+function clampAiChatPosition(x,y,root){
+  const pad=10;
+  const inset=aiChatBottomInset();
+  const w=root.offsetWidth||200;
+  const h=root.offsetHeight||60;
+  return {
+    x:Math.round(Math.max(pad,Math.min(x,window.innerWidth-w-pad))),
+    y:Math.round(Math.max(pad,Math.min(y,window.innerHeight-h-pad-inset))),
+  };
+}
+function updateAiChatDockAlign(){
+  const root=document.getElementById('ai-chat');
+  const panel=document.getElementById('ai-chat-panel');
+  if(!root||!panel) return;
+  const rect=root.getBoundingClientRect();
+  const onLeft=rect.left+rect.width/2<window.innerWidth/2;
+  root.style.alignItems=onLeft?'flex-start':'flex-end';
+  panel.style.transformOrigin=onLeft?'bottom left':'bottom right';
+}
+function applyAiChatPosition(){
+  const root=document.getElementById('ai-chat');
+  if(!root) return;
+  const pos=state.ai?.pos;
+  if(pos&&typeof pos.x==='number'&&typeof pos.y==='number'){
+    const clamped=clampAiChatPosition(pos.x,pos.y,root);
+    root.classList.add('ai-chat-positioned');
+    root.style.left=clamped.x+'px';
+    root.style.top=clamped.y+'px';
+    root.style.right='auto';
+    root.style.bottom='auto';
+    if(clamped.x!==pos.x||clamped.y!==pos.y){
+      state.ai.pos=clamped;
+      save();
+    }
+  }else{
+    root.classList.remove('ai-chat-positioned');
+    root.style.left='';
+    root.style.top='';
+    root.style.right='';
+    root.style.bottom='';
+  }
+  updateAiChatDockAlign();
+}
+function resetAiChatPosition(){
+  if(state.ai) delete state.ai.pos;
+  save();
+  applyAiChatPosition();
+  showToast('💬','Chat IA','Posição do botão restaurada.');
+}
+let aiChatDrag={active:false,moved:false,startX:0,startY:0,origX:0,origY:0,pointerId:null};
+function initAiChatDrag(){
+  const fab=document.getElementById('ai-chat-fab');
+  const root=document.getElementById('ai-chat');
+  if(!fab||!root) return;
+  fab.addEventListener('pointerdown',(e)=>{
+    if(e.button!==0||aiChatOpen) return;
+    const rect=root.getBoundingClientRect();
+    aiChatDrag={
+      active:true,moved:false,
+      startX:e.clientX,startY:e.clientY,
+      origX:rect.left,origY:rect.top,
+      pointerId:e.pointerId,
+    };
+    fab.setPointerCapture(e.pointerId);
+  });
+  fab.addEventListener('pointermove',(e)=>{
+    if(!aiChatDrag.active||e.pointerId!==aiChatDrag.pointerId) return;
+    const dx=e.clientX-aiChatDrag.startX;
+    const dy=e.clientY-aiChatDrag.startY;
+    if(!aiChatDrag.moved&&Math.hypot(dx,dy)<10) return;
+    aiChatDrag.moved=true;
+    root.classList.add('ai-chat-dragging','ai-chat-positioned');
+    root.style.right='auto';
+    root.style.bottom='auto';
+    const bounds=clampAiChatPosition(aiChatDrag.origX+dx,aiChatDrag.origY+dy,root);
+    root.style.left=bounds.x+'px';
+    root.style.top=bounds.y+'px';
+    updateAiChatDockAlign();
+  });
+  const endDrag=(e)=>{
+    if(!aiChatDrag.active||e.pointerId!==aiChatDrag.pointerId) return;
+    try{ fab.releasePointerCapture(e.pointerId); }catch(_){}
+    root.classList.remove('ai-chat-dragging');
+    if(aiChatDrag.moved){
+      const rect=root.getBoundingClientRect();
+      if(!state.ai) state.ai={apiKey:''};
+      state.ai.pos={x:Math.round(rect.left),y:Math.round(rect.top)};
+      save();
+      fab.dataset.suppressClick='1';
+      setTimeout(()=>{ delete fab.dataset.suppressClick; },120);
+    }
+    aiChatDrag.active=false;
+  };
+  fab.addEventListener('pointerup',endDrag);
+  fab.addEventListener('pointercancel',endDrag);
+  fab.addEventListener('click',(e)=>{
+    if(fab.dataset.suppressClick){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+    toggleAiChat();
+  });
+  fab.addEventListener('dblclick',(e)=>{
+    e.preventDefault();
+    resetAiChatPosition();
+  });
+  window.addEventListener('resize',()=>{
+    if(state.ai?.pos) applyAiChatPosition();
+    else updateAiChatDockAlign();
+  });
 }
 function buildAiPanelContext(){
   const pending=state.tasks?.filter(t=>!t.done).length||0;
@@ -4144,6 +4270,7 @@ function toggleAiChat(open){
   document.body.classList.toggle('ai-chat-open',aiChatOpen);
   if(aiChatOpen){
     renderAiChatMessages();
+    applyAiChatPosition();
     setTimeout(()=>document.getElementById('ai-chat-input')?.focus(),180);
   }
 }
@@ -4243,8 +4370,11 @@ function initAiChat(){
   document.addEventListener('keydown',(ev)=>{
     if(ev.key==='Escape'&&aiChatOpen) toggleAiChat(false);
   });
+  applyAiChatPosition();
+  initAiChatDrag();
   renderAiChatMessages();
 }
+window.resetAiChatPosition=resetAiChatPosition;
 window.toggleAiChat=toggleAiChat;
 window.submitAiChat=submitAiChat;
 window.clearAiChat=clearAiChat;
