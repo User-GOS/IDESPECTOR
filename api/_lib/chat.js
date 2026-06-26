@@ -49,6 +49,28 @@ async function callOpenAICompatible(baseUrl, apiKey, model, messages, options = 
   return { reply, model: data?.model || model, provider: baseUrl.includes('groq') ? 'groq' : 'openai' };
 }
 
+async function callPollinationsFree(messages, options = {}) {
+  const normalized = normalizeMessages(messages);
+  if (!normalized.length || normalized[normalized.length - 1].role !== 'user') {
+    throw new Error('Envie pelo menos uma mensagem do usuário.');
+  }
+
+  const system = buildSystemPrompt(options.context);
+  let prompt = `${system}\n\nConversa:\n`;
+  for (const m of normalized) {
+    prompt += `${m.role === 'user' ? 'Usuário' : 'Assistente'}: ${m.content}\n`;
+  }
+  prompt += 'Assistente:';
+
+  const url = `https://text.pollinations.ai/${encodeURIComponent(prompt.slice(0, 12000))}?model=openai`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(55000) });
+  if (!res.ok) throw new Error(`IA gratuita indisponível (HTTP ${res.status})`);
+
+  const reply = String(await res.text()).trim();
+  if (!reply) throw new Error('Resposta vazia da IA.');
+  return { reply, model: 'openai-via-pollinations', provider: 'pollinations' };
+}
+
 async function chatCompletion(messages, options = {}) {
   const userKey = String(options.apiKey || '').trim();
   const openaiKey = userKey || String(process.env.OPENAI_API_KEY || '').trim();
@@ -67,7 +89,14 @@ async function chatCompletion(messages, options = {}) {
       );
     } catch (err) {
       errors.push(err);
-      if (!groqKey || userKey) throw err;
+      if (!groqKey || userKey) {
+        try {
+          return await callPollinationsFree(messages, options);
+        } catch (freeErr) {
+          errors.push(freeErr);
+          throw err;
+        }
+      }
     }
   }
 
@@ -86,8 +115,13 @@ async function chatCompletion(messages, options = {}) {
     }
   }
 
-  const hint = 'Configure OPENAI_API_KEY ou GROQ_API_KEY na Vercel, ou informe sua chave OpenAI no chat (ícone ⚙).';
-  throw new Error(errors[0]?.message || `IA não configurada. ${hint}`);
+  try {
+    return await callPollinationsFree(messages, options);
+  } catch (err) {
+    errors.push(err);
+  }
+
+  throw new Error(errors[0]?.message || 'IA temporariamente indisponível. Tente novamente em instantes.');
 }
 
-module.exports = { chatCompletion, normalizeMessages, SYSTEM_PROMPT, callOpenAICompatible };
+module.exports = { chatCompletion, normalizeMessages, SYSTEM_PROMPT, callOpenAICompatible, callPollinationsFree };

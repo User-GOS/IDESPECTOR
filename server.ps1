@@ -3,6 +3,16 @@ param([int]$Port = 8772)
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $Root = $PSScriptRoot
+$envFile = Join-Path $Root ".env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^\s*([^#=]+)=(.*)$') {
+            $name = $Matches[1].Trim()
+            $value = $Matches[2].Trim().Trim('"').Trim("'")
+            Set-Item -Path "env:$name" -Value $value
+        }
+    }
+}
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$Port/")
 $listener.Start()
@@ -413,10 +423,6 @@ while ($listener.IsListening) {
             $userKey = [string]$data.apiKey
             $openAiKey = if ($userKey) { $userKey } else { [string]$env:OPENAI_API_KEY }
             $groqKey = [string]$env:GROQ_API_KEY
-            if ([string]::IsNullOrWhiteSpace($openAiKey) -and [string]::IsNullOrWhiteSpace($groqKey)) {
-                Send-Json $response 503 @{ ok = $false; error = "IA nao configurada. Defina OPENAI_API_KEY ou GROQ_API_KEY, ou informe apiKey no corpo." }
-                continue
-            }
             $messages = @()
             if ($data.messages) { $messages = @($data.messages) }
             $userMsgs = @($messages | Where-Object { $_.role -eq "user" -and -not [string]::IsNullOrWhiteSpace([string]$_.content) })
@@ -451,6 +457,20 @@ while ($listener.IsListening) {
                 if ([string]::IsNullOrWhiteSpace($reply)) { throw "Resposta vazia da IA" }
                 return @{ reply = $reply.Trim(); model = $model }
             }
+            function Invoke-PollinationsChat($openAiMessages) {
+                $prompt = ""
+                foreach ($m in $openAiMessages) {
+                    if ($m.role -eq "system") { $prompt += [string]$m.content + "`n`n" }
+                    elseif ($m.role -eq "user") { $prompt += "Usuario: " + [string]$m.content + "`n" }
+                    else { $prompt += "Assistente: " + [string]$m.content + "`n" }
+                }
+                $prompt += "Assistente:"
+                if ($prompt.Length -gt 12000) { $prompt = $prompt.Substring(0, 12000) }
+                $url = "https://text.pollinations.ai/" + [uri]::EscapeDataString($prompt) + "?model=openai"
+                $reply = [string](Invoke-RestMethod -Uri $url -TimeoutSec 55)
+                if ([string]::IsNullOrWhiteSpace($reply)) { throw "Resposta vazia da IA" }
+                return @{ reply = $reply.Trim(); model = "openai-via-pollinations" }
+            }
             try {
                 $result = $null
                 if (-not [string]::IsNullOrWhiteSpace($openAiKey)) {
@@ -458,18 +478,19 @@ while ($listener.IsListening) {
                         $model = if ($env:OPENAI_MODEL) { [string]$env:OPENAI_MODEL } else { "gpt-4o-mini" }
                         $result = Invoke-ChatProvider "https://api.openai.com/v1" $openAiKey $model
                     } catch {
-                        if ([string]::IsNullOrWhiteSpace($groqKey) -or $userKey) { throw }
+                        if ([string]::IsNullOrWhiteSpace($groqKey) -or $userKey) { $result = $null }
                     }
                 }
                 if (-not $result -and -not [string]::IsNullOrWhiteSpace($groqKey)) {
-                    $gModel = if ($env:GROQ_MODEL) { [string]$env:GROQ_MODEL } else { "llama-3.3-70b-versatile" }
-                    $result = Invoke-ChatProvider "https://api.groq.com/openai/v1" $groqKey $gModel
+                    try {
+                        $gModel = if ($env:GROQ_MODEL) { [string]$env:GROQ_MODEL } else { "llama-3.3-70b-versatile" }
+                        $result = Invoke-ChatProvider "https://api.groq.com/openai/v1" $groqKey $gModel
+                    } catch { $result = $null }
                 }
-                if ($result) {
-                    Send-Json $response 200 @{ ok = $true; reply = $result.reply; model = $result.model }
-                } else {
-                    Send-Json $response 503 @{ ok = $false; error = "IA nao configurada" }
+                if (-not $result) {
+                    $result = Invoke-PollinationsChat $openAiMessages
                 }
+                Send-Json $response 200 @{ ok = $true; reply = $result.reply; model = $result.model }
             } catch {
                 Send-Json $response 502 @{ ok = $false; error = "Erro ao conversar com a IA: $($_.Exception.Message)" }
             }

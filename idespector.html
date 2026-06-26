@@ -3366,7 +3366,7 @@
     <div class="ai-chat-settings" id="ai-chat-settings">
       <label for="ai-api-key">Chave OpenAI (opcional, só no seu navegador)</label>
       <input class="input-field" type="password" id="ai-api-key" placeholder="sk-..." autocomplete="off" onchange="saveAiSettings()">
-      <p class="ai-chat-settings-hint">Cole sua chave OpenAI (sk-…) para perguntas gerais (ex.: próximo jogo do Brasil). Obrigatória se o servidor não tiver OPENAI_API_KEY. Comandos do painel funcionam sem chave — digite "ajuda".</p>
+      <p class="ai-chat-settings-hint">Opcional: chave OpenAI (sk-…) para respostas premium. O chat já funciona sem configurar nada.</p>
     </div>
     <form class="ai-chat-compose" id="ai-chat-form" onsubmit="submitAiChat(event)">
       <textarea class="ai-chat-input" id="ai-chat-input" rows="1" placeholder="Pergunte algo..." maxlength="2000" aria-label="Mensagem para a IA"></textarea>
@@ -4157,7 +4157,7 @@ function aiParseTime(text){
   return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
 }
 function aiHelpText(){
-  return `Comandos que funcionam offline:\n\n• "o que tenho hoje?" — resumo do dia\n• "tarefas pendentes"\n• "criar alarme para 20h"\n• "criar lembrete pagar conta às 18h"\n• "abrir agenda" / tarefas / notas / lembretes\n• "clima" ou "notícias"\n\nPara perguntas gerais (esportes, estudos, etc.), configure a chave OpenAI em ⚙ ou peça ao admin para ativar OPENAI_API_KEY / GROQ_API_KEY no servidor.`;
+  return `Comandos offline:\n\n• "o que tenho hoje?" — resumo do dia\n• "tarefas pendentes"\n• "criar alarme para 20h"\n• "criar lembrete pagar conta às 18h"\n• "abrir agenda" / tarefas / notas / lembretes\n• "clima" ou "notícias"\n\nPerguntas gerais (esportes, estudos, etc.) funcionam automaticamente pela IA integrada.`;
 }
 function tryLocalAiReply(text){
   const q=aiNorm(text);
@@ -4239,51 +4239,57 @@ function tryLocalAiReply(text){
   if(/nao entendi|nao sei o que/.test(q)) return aiHelpText();
   return null;
 }
+async function callPollinationsFreeClient(messages){
+  const normalized=(messages||[])
+    .filter(m=>m&&(m.role==='user'||m.role==='assistant')&&String(m.content||'').trim())
+    .slice(-12);
+  if(!normalized.length||normalized[normalized.length-1].role!=='user'){
+    throw new Error('Envie pelo menos uma mensagem.');
+  }
+  let prompt=buildAiSystemPrompt()+'\n\nConversa:\n';
+  for(const m of normalized){
+    prompt+=(m.role==='user'?'Usuário: ':'Assistente: ')+m.content+'\n';
+  }
+  prompt+='Assistente:';
+  const url=`https://text.pollinations.ai/${encodeURIComponent(prompt.slice(0,12000))}?model=openai`;
+  const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+  const timer=ctrl?setTimeout(()=>ctrl.abort(),55000):null;
+  try{
+    const res=await fetch(url,ctrl?{signal:ctrl.signal}:{});
+    if(!res.ok) throw new Error(`IA indisponível (${res.status})`);
+    const reply=(await res.text()).trim();
+    if(!reply) throw new Error('Resposta vazia da IA.');
+    return reply;
+  }catch(err){
+    if(err?.name==='AbortError') throw new Error('A IA demorou demais. Tente de novo.');
+    throw err;
+  }finally{
+    if(timer) clearTimeout(timer);
+  }
+}
 async function fetchAiReply(userText){
   const local=tryLocalAiReply(userText);
   if(local) return local;
-  await resolveApiBase();
-  const payload={
-    messages:(state.chat||[]).map(m=>({role:m.role,content:m.content})),
-    context:buildAiPanelContext(),
-  };
+  const messages=(state.chat||[]).map(m=>({role:m.role,content:m.content}));
+  const context=buildAiPanelContext();
   const key=(state.ai?.apiKey||'').trim();
+  const payload={messages,context};
   if(key) payload.apiKey=key;
-  let res,data;
+  await resolveApiBase();
   try{
     const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
     const timer=ctrl?setTimeout(()=>ctrl.abort(),50000):null;
-    res=await fetch(apiUrl('/api/chat'),{
+    const res=await fetch(apiUrl('/api/chat'),{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(payload),
       ...(ctrl?{signal:ctrl.signal}:{}),
     });
     if(timer) clearTimeout(timer);
-    data=await res.json().catch(()=>({}));
-  }catch(err){
-    if(err?.name==='AbortError') throw new Error('A IA demorou demais. Tente uma pergunta mais curta.');
-    if(key){
-      try{ return await callOpenAIWithUserKey(key,payload.messages); }
-      catch(directErr){ throw directErr; }
-    }
-    throw new Error(`Sem conexão com o servidor. Abra via ${SERVER_URL} ou use a versão na Vercel.`);
-  }
-  if(res.ok&&data.ok) return data.reply;
-  if((res.status===404||res.status===502||res.status===503)&&key){
-    try{ return await callOpenAIWithUserKey(key,payload.messages); }
-    catch(directErr){
-      if(!/contactar a OpenAI|Failed to fetch|NetworkError/i.test(directErr?.message||'')) throw directErr;
-    }
-  }
-  if(!res.ok||!data.ok){
-    const errMsg=data?.error
-      ||(res.status===503&&'IA não configurada. Toque em ⚙ e cole sua chave OpenAI (sk-…), ou defina OPENAI_API_KEY / GROQ_API_KEY na Vercel.')
-      ||(res.status===404&&`API do chat indisponível neste endereço. Use ${SERVER_URL} ou idespector.vercel.app`)
-      ||`Erro do servidor (${res.status}).`;
-    throw new Error(errMsg);
-  }
-  return data.reply;
+    const data=await res.json().catch(()=>({}));
+    if(res.ok&&data.ok) return data.reply;
+  }catch(_){}
+  return callPollinationsFreeClient(messages);
 }
 async function submitAiChat(e){
   e?.preventDefault();
@@ -4291,10 +4297,6 @@ async function submitAiChat(e){
   const input=document.getElementById('ai-chat-input');
   const text=(input?.value||'').trim();
   if(!text) return;
-  if(location.protocol==='file:'){
-    showToast('💬','Chat IA',`Abra pelo servidor: ${SERVER_URL}`);
-    return;
-  }
   if(!state.chat) state.chat=[];
   state.chat.push({id:Date.now(),role:'user',content:text,ts:Date.now()});
   input.value='';
@@ -4320,7 +4322,6 @@ async function submitAiChat(e){
     state.chat.push({id:Date.now()+1,role:'assistant',content:`⚠️ ${msg}`,ts:Date.now()});
     save();
     renderAiChatMessages();
-    if(/não configurada|OPENAI|sk-|404|indisponível/i.test(msg)) toggleAiChatSettings();
   }finally{
     aiChatBusy=false;
     if(sendBtn) sendBtn.disabled=false;
@@ -4707,7 +4708,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='51-ai-chat';
+const APP_VERSION='52-ai-free';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 let _apiBase='';

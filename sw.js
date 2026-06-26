@@ -1,4 +1,4 @@
-const CACHE = 'idespector-shell-v2';
+const CACHE = 'idespector-shell-v3';
 const PRECACHE = [
   '/manifest.json',
   '/assets/idespector-icon.png',
