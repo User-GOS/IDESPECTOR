@@ -611,12 +611,12 @@
   }
   .ai-chat-compose .btn-primary:hover:not(:disabled) { background:var(--ai-chat-blue-hover); }
   .ai-chat-launcher {
-    display:inline-flex; align-items:center; justify-content:center; gap:9px;
-    height:var(--ai-chat-launcher-h); padding:0 18px 0 14px;
-    border-radius:999px; border:1px solid rgba(255,255,255,0.16);
+    display:inline-flex; align-items:center; justify-content:center;
+    width:var(--ai-chat-launcher-h); height:var(--ai-chat-launcher-h);
+    padding:0; border-radius:14px; border:1px solid rgba(255,255,255,0.16);
     background:var(--ai-chat-blue); color:#fff;
-    font-family:inherit; font-size:13px; font-weight:700; letter-spacing:-0.01em;
-    cursor:grab; pointer-events:auto; touch-action:none; user-select:none;
+    font-family:inherit; cursor:grab; pointer-events:auto;
+    touch-action:none; user-select:none;
     box-shadow:0 10px 28px rgba(37,99,235,0.38);
     transition:transform .2s var(--ease-out), box-shadow .2s, background .2s, opacity .2s;
     outline:none; -webkit-tap-highlight-color:transparent;
@@ -640,16 +640,8 @@
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
   .ai-chat-launcher-icon svg {
-    width:20px; height:20px; stroke:currentColor; fill:none;
+    width:22px; height:22px; stroke:currentColor; fill:none;
     stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
-  }
-  .ai-chat-launcher-label { white-space:nowrap; }
-  @media (max-width:520px) {
-    .ai-chat-launcher-label { display:none; }
-    .ai-chat-launcher {
-      width:var(--ai-chat-launcher-h); height:var(--ai-chat-launcher-h);
-      padding:0; border-radius:14px;
-    }
   }
   .ai-chat-settings {
     padding:12px 16px; border-top:1px solid var(--border); background:var(--bg-elevated);
@@ -3519,11 +3511,10 @@
       <button type="submit" class="btn btn-primary btn-sm" id="ai-chat-send">Enviar</button>
     </form>
   </div>
-  <button type="button" class="ai-chat-launcher" id="ai-chat-fab" title="Arraste para mover · clique para abrir" aria-label="Abrir chat com IA. Arraste para mover na tela." aria-expanded="false">
+  <button type="button" class="ai-chat-launcher" id="ai-chat-fab" title="Assistente IA · arraste para mover" aria-label="Assistente IA. Arraste para mover na tela." aria-expanded="false">
     <span class="ai-chat-launcher-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     </span>
-    <span class="ai-chat-launcher-label">Assistente IA</span>
   </button>
 </div>
 
