@@ -4266,8 +4266,8 @@ async function fetchAiReply(userText){
   }
   if(!res.ok||!data.ok){
     const errMsg=data?.error
-      ||(res.status===503?'IA não configurada no servidor. Use ⚙ para colar sua chave OpenAI, ou peça OPENAI_API_KEY / GROQ_API_KEY na Vercel.')
-      ||(res.status===404?'Rota /api/chat não encontrada. Atualize o deploy.')
+      ||(res.status===503&&'IA não configurada no servidor. Use ⚙ para colar sua chave OpenAI, ou peça OPENAI_API_KEY / GROQ_API_KEY na Vercel.')
+      ||(res.status===404&&'Rota /api/chat não encontrada. Atualize o deploy.')
       ||`Erro do servidor (${res.status}).`;
     throw new Error(errMsg);
   }
