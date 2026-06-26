@@ -3366,7 +3366,7 @@
     <div class="ai-chat-settings" id="ai-chat-settings">
       <label for="ai-api-key">Chave OpenAI (opcional, só no seu navegador)</label>
       <input class="input-field" type="password" id="ai-api-key" placeholder="sk-..." autocomplete="off" onchange="saveAiSettings()">
-      <p class="ai-chat-settings-hint">Chave OpenAI (sk-…). Necessária para perguntas gerais. Comandos do painel funcionam sem chave — digite "ajuda".</p>
+      <p class="ai-chat-settings-hint">Cole sua chave OpenAI (sk-…) para perguntas gerais (ex.: próximo jogo do Brasil). Obrigatória se o servidor não tiver OPENAI_API_KEY. Comandos do painel funcionam sem chave — digite "ajuda".</p>
     </div>
     <form class="ai-chat-compose" id="ai-chat-form" onsubmit="submitAiChat(event)">
       <textarea class="ai-chat-input" id="ai-chat-input" rows="1" placeholder="Pergunte algo..." maxlength="2000" aria-label="Mensagem para a IA"></textarea>
@@ -4242,6 +4242,7 @@ function tryLocalAiReply(text){
 async function fetchAiReply(userText){
   const local=tryLocalAiReply(userText);
   if(local) return local;
+  await resolveApiBase();
   const payload={
     messages:(state.chat||[]).map(m=>({role:m.role,content:m.content})),
     context:buildAiPanelContext(),
@@ -4252,7 +4253,7 @@ async function fetchAiReply(userText){
   try{
     const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
     const timer=ctrl?setTimeout(()=>ctrl.abort(),50000):null;
-    res=await fetch('/api/chat',{
+    res=await fetch(apiUrl('/api/chat'),{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(payload),
@@ -4262,12 +4263,23 @@ async function fetchAiReply(userText){
     data=await res.json().catch(()=>({}));
   }catch(err){
     if(err?.name==='AbortError') throw new Error('A IA demorou demais. Tente uma pergunta mais curta.');
-    throw new Error('Sem conexão com o servidor. Verifique sua internet ou abra via iniciar.bat / Vercel.');
+    if(key){
+      try{ return await callOpenAIWithUserKey(key,payload.messages); }
+      catch(directErr){ throw directErr; }
+    }
+    throw new Error(`Sem conexão com o servidor. Abra via ${SERVER_URL} ou use a versão na Vercel.`);
+  }
+  if(res.ok&&data.ok) return data.reply;
+  if((res.status===404||res.status===502||res.status===503)&&key){
+    try{ return await callOpenAIWithUserKey(key,payload.messages); }
+    catch(directErr){
+      if(!/contactar a OpenAI|Failed to fetch|NetworkError/i.test(directErr?.message||'')) throw directErr;
+    }
   }
   if(!res.ok||!data.ok){
     const errMsg=data?.error
-      ||(res.status===503&&'IA não configurada no servidor. Use ⚙ para colar sua chave OpenAI, ou peça OPENAI_API_KEY / GROQ_API_KEY na Vercel.')
-      ||(res.status===404&&'Rota /api/chat não encontrada. Atualize o deploy.')
+      ||(res.status===503&&'IA não configurada. Toque em ⚙ e cole sua chave OpenAI (sk-…), ou defina OPENAI_API_KEY / GROQ_API_KEY na Vercel.')
+      ||(res.status===404&&`API do chat indisponível neste endereço. Use ${SERVER_URL} ou idespector.vercel.app`)
       ||`Erro do servidor (${res.status}).`;
     throw new Error(errMsg);
   }
@@ -4308,7 +4320,7 @@ async function submitAiChat(e){
     state.chat.push({id:Date.now()+1,role:'assistant',content:`⚠️ ${msg}`,ts:Date.now()});
     save();
     renderAiChatMessages();
-    if(/não configurada|OPENAI/i.test(msg)) toggleAiChatSettings();
+    if(/não configurada|OPENAI|sk-|404|indisponível/i.test(msg)) toggleAiChatSettings();
   }finally{
     aiChatBusy=false;
     if(sendBtn) sendBtn.disabled=false;
@@ -4698,11 +4710,83 @@ function save(){
 const APP_VERSION='51-ai-chat';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
+let _apiBase='';
+let _apiBaseReady=null;
 function isLocalDev(){
   return location.hostname==='localhost'||location.hostname==='127.0.0.1';
 }
 function isHostedDeploy(){
   return location.protocol.startsWith('http')&&!isLocalDev();
+}
+async function resolveApiBase(){
+  if(_apiBaseReady) return _apiBaseReady;
+  _apiBaseReady=(async()=>{
+    if(location.protocol==='file:'){
+      _apiBase=`http://127.0.0.1:${SERVER_PORT}`;
+      return _apiBase;
+    }
+    if(isLocalDev()&&location.port!==String(SERVER_PORT)){
+      try{
+        const r=await fetch(`http://127.0.0.1:${SERVER_PORT}/api/health`,{cache:'no-store'});
+        if(r.ok){ _apiBase=`http://127.0.0.1:${SERVER_PORT}`; return _apiBase; }
+      }catch(_){}
+    }
+    _apiBase='';
+    return _apiBase;
+  })();
+  return _apiBaseReady;
+}
+function apiUrl(path){
+  const p=path.startsWith('/')?path:`/${path}`;
+  return `${_apiBase||''}${p}`;
+}
+function buildAiSystemPrompt(){
+  const ctx=buildAiPanelContext();
+  return `Você é o assistente IA do IDespector, um painel pessoal de produtividade.
+Ajude com tarefas, hábitos, organização, motivação, estudos e perguntas gerais (incluindo notícias, esportes e cultura quando souber).
+Responda sempre em português do Brasil, de forma clara, objetiva e amigável.
+Use listas curtas quando fizer sentido. Para dados do painel do usuário, use o contexto fornecido; se não souber algo atualizado, diga honestamente.
+
+Contexto atual do painel:
+${ctx}`;
+}
+async function callOpenAIWithUserKey(apiKey,messages){
+  const normalized=(messages||[])
+    .filter(m=>m&&(m.role==='user'||m.role==='assistant')&&String(m.content||'').trim())
+    .slice(-20)
+    .map(m=>({role:m.role,content:String(m.content).trim().slice(0,4000)}));
+  if(!normalized.length||normalized[normalized.length-1].role!=='user'){
+    throw new Error('Envie pelo menos uma mensagem.');
+  }
+  const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+  const timer=ctrl?setTimeout(()=>ctrl.abort(),50000):null;
+  let res;
+  try{
+    res=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'gpt-4o-mini',
+        messages:[{role:'system',content:buildAiSystemPrompt()},...normalized],
+        max_tokens:900,
+        temperature:0.65,
+      }),
+      ...(ctrl?{signal:ctrl.signal}:{}),
+    });
+  }catch(err){
+    if(err?.name==='AbortError') throw new Error('A IA demorou demais. Tente uma pergunta mais curta.');
+    throw new Error('Não foi possível contactar a OpenAI deste navegador. Use iniciar.bat (porta 8772) ou publique na Vercel.');
+  }finally{
+    if(timer) clearTimeout(timer);
+  }
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok){
+    const msg=data?.error?.message||`OpenAI HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  const reply=String(data?.choices?.[0]?.message?.content||'').trim();
+  if(!reply) throw new Error('Resposta vazia da OpenAI.');
+  return reply;
 }
 function load(){
   if(!currentAuthUser) return;
@@ -9030,6 +9114,7 @@ function initDailyBrief(){
 function bootstrapApp(){
   if(appBootstrapped) return;
   appBootstrapped=true;
+  resolveApiBase();
   initRippleEffects();
   initKanbanDragDrop();
   initWorkSessionWatch();

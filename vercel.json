@@ -2,6 +2,11 @@
   "rewrites": [
     { "source": "/", "destination": "/idespector.html" }
   ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
   "headers": [
     {
       "source": "/idespector.html",
