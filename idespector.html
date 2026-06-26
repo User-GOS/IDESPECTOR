@@ -3147,6 +3147,10 @@ function createEmptyUserState(name){
     notes:{content:'',updated:null},
     habits:[],goals:[],
     gamification:{xp:0,level:0,totalHabitsCompleted:0,perfectDays:0,perfectDaysLog:{},badges:[],gameCleared:false},
+    workSession:{
+      enabled:true,segmentStart:null,accumulatedMs:0,lastActivity:null,
+      thresholdMs:4*60*60*1000,idleMs:5*60*1000,lastAlertCycle:0,
+    },
     translator:{dir:'pt-en'},
     appVersion:APP_VERSION,
   };
@@ -3320,6 +3324,7 @@ function load(){
     migrateProductivity();
     migrateTranslator();
     migrateGamification();
+    migrateWorkSession();
     migrateWhatsApp();
     resetNotifFiredIfNeeded();
     const needsReset=state.appVersion!==APP_VERSION
@@ -3661,7 +3666,140 @@ function updateClock(){
   document.getElementById('greeting-main').innerHTML=`<span>${gr}${name}</span>`;
   document.getElementById('greeting-tag').textContent=new Date().toLocaleString('pt-BR',{weekday:'long'}).replace(/^\w/,c=>c.toUpperCase());
   checkAlarms(now);
+  checkWorkSessionBreak();
   pulseClockTick();
+}
+
+function migrateWorkSession(){
+  if(!state.workSession){
+    state.workSession={
+      enabled:true,
+      segmentStart:null,
+      accumulatedMs:0,
+      lastActivity:null,
+      thresholdMs:4*60*60*1000,
+      idleMs:5*60*1000,
+      lastAlertCycle:0,
+    };
+    save();
+  }
+}
+function ensureWorkSession(){
+  migrateWorkSession();
+  return state.workSession;
+}
+let workSessionDirty=false;
+let workSessionSaveTimer=null;
+function saveWorkSessionIfDirty(){
+  if(!workSessionDirty) return;
+  workSessionDirty=false;
+  save();
+}
+function flushWorkSegment(now=Date.now()){
+  const ws=state.workSession;
+  if(!ws?.segmentStart) return;
+  ws.accumulatedMs=(ws.accumulatedMs||0)+(now-ws.segmentStart);
+  ws.segmentStart=null;
+}
+function getWorkElapsedMs(now=Date.now()){
+  const ws=state.workSession;
+  if(!ws) return 0;
+  let total=ws.accumulatedMs||0;
+  const idleMs=ws.idleMs||5*60*1000;
+  if(ws.segmentStart&&ws.lastActivity&&now-ws.lastActivity<=idleMs){
+    total+=now-ws.segmentStart;
+  }
+  return total;
+}
+function recordWorkActivity(){
+  if(document.hidden) return;
+  const ws=ensureWorkSession();
+  if(!ws.enabled) return;
+  const now=Date.now();
+  const idleMs=ws.idleMs||5*60*1000;
+  if(ws.lastActivity&&now-ws.lastActivity>idleMs){
+    ws.accumulatedMs=0;
+    ws.segmentStart=now;
+  }else if(!ws.segmentStart){
+    ws.segmentStart=now;
+  }
+  ws.lastActivity=now;
+  workSessionDirty=true;
+}
+function onWorkSessionHidden(){
+  flushWorkSegment();
+  workSessionDirty=true;
+  saveWorkSessionIfDirty();
+}
+function onWorkSessionVisible(){
+  const ws=ensureWorkSession();
+  const now=Date.now();
+  const idleMs=ws.idleMs||5*60*1000;
+  if(ws.lastActivity&&now-ws.lastActivity>idleMs){
+    ws.accumulatedMs=0;
+    ws.segmentStart=null;
+  }
+  recordWorkActivity();
+}
+const WORK_BREAK_TIPS=[
+  'Beba um copo d\'água e descanse os olhos por alguns minutos.',
+  'Pausa recomendada: hidrate-se, alongue os braços e respire fundo.',
+  'Seu corpo agradece — água, lanche leve e um breve movimento.',
+  'Momento ideal para beber água e afastar-se da tela por 5 minutos.',
+];
+function checkWorkSessionBreak(){
+  if(document.hidden) return;
+  const ws=ensureWorkSession();
+  if(!ws.enabled||!ws.segmentStart) return;
+  const now=Date.now();
+  const idleMs=ws.idleMs||5*60*1000;
+  if(ws.lastActivity&&now-ws.lastActivity>idleMs){
+    ws.accumulatedMs=0;
+    ws.segmentStart=null;
+    workSessionDirty=true;
+    saveWorkSessionIfDirty();
+    return;
+  }
+  const threshold=ws.thresholdMs||4*60*60*1000;
+  if(getWorkElapsedMs(now)<threshold) return;
+  ws.accumulatedMs=0;
+  ws.segmentStart=now;
+  ws.lastActivity=now;
+  ws.lastAlertCycle=(ws.lastAlertCycle||0)+1;
+  const tip=WORK_BREAK_TIPS[Math.floor(Math.random()*WORK_BREAK_TIPS.length)];
+  notifyUser(
+    '💧',
+    '4 horas de foco contínuo!',
+    `Você está trabalhando há 4 horas seguidas. ${tip}`,
+    'work-break',
+    'health',
+    String(ws.lastAlertCycle)
+  );
+  save();
+}
+function initWorkSessionWatch(){
+  if(document._workSessionWatch) return;
+  document._workSessionWatch=true;
+  let lastRecord=0;
+  const onAct=()=>{
+    const now=Date.now();
+    if(now-lastRecord<800) return;
+    lastRecord=now;
+    recordWorkActivity();
+    if(!workSessionSaveTimer){
+      workSessionSaveTimer=setTimeout(()=>{
+        saveWorkSessionIfDirty();
+        workSessionSaveTimer=null;
+      },30000);
+    }
+  };
+  ['mousemove','mousedown','keydown','click','scroll','touchstart'].forEach(ev=>{
+    document.addEventListener(ev,onAct,{passive:true});
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden) onWorkSessionHidden();
+    else onWorkSessionVisible();
+  });
 }
 
 function resetWhatsAppSentIfNeeded(){
@@ -7137,6 +7275,7 @@ function bootstrapApp(){
   appBootstrapped=true;
   initRippleEffects();
   initKanbanDragDrop();
+  initWorkSessionWatch();
   load();
   initTranslator();
   handleOutlookAuthCallback();
@@ -7156,6 +7295,7 @@ function bootstrapApp(){
   if(isOutlookConnected()||state.outlook?.icsUrl) setTimeout(()=>syncOutlookCalendar(false),1200);
   setView('dashboard', document.querySelector('.sidebar .nav-item.active'));
   syncIntegrationMenu();
+  recordWorkActivity();
   setTimeout(()=>showToast('🚀','IDespector ativo','Sistema inicializado com sucesso!'),800);
   setTimeout(()=>showToast('📋','Resumo do dia',`${state.tasks.filter(t=>!t.done).length} tarefas pendentes, ${eventsOnDate(todayStr()).length} eventos hoje.`),2000);
 }
