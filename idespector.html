@@ -3154,18 +3154,66 @@ function formatVerseDateLabel(dateStr=todayStr()){
   return label.charAt(0).toUpperCase()+label.slice(1);
 }
 let lastRenderedVerseDate=null;
-function renderDailyVerse(){
-  const verse=getDailyVerse();
+let dailyVerseCache=null;
+function applyDailyVerseToDOM(verse){
   const textEl=document.getElementById('verse-text');
   const refEl=document.getElementById('verse-ref');
   const dateEl=document.getElementById('verse-date');
   if(textEl) textEl.textContent=`"${verse.text}"`;
   if(refEl) refEl.textContent=verse.ref;
   if(dateEl) dateEl.textContent=formatVerseDateLabel();
-  lastRenderedVerseDate=todayStr();
+  dailyVerseCache=verse;
 }
+function dailyVerseCacheKey(dateStr=todayStr()){
+  return 'idespector-daily-verse-v1-'+dateStr;
+}
+function bibleApiRef(ref){
+  return String(ref||'').split('-')[0].trim();
+}
+async function loadDailyVerse(force=false){
+  const today=todayStr();
+  const textEl=document.getElementById('verse-text');
+  if(!textEl) return;
+  if(!force&&lastRenderedVerseDate===today&&dailyVerseCache) return;
+
+  const local=getDailyVerse(today);
+  applyDailyVerseToDOM(local);
+  lastRenderedVerseDate=today;
+
+  if(!force){
+    try{
+      const cached=localStorage.getItem(dailyVerseCacheKey(today));
+      if(cached){
+        const v=JSON.parse(cached);
+        if(v?.text&&v?.ref){applyDailyVerseToDOM(v);return;}
+      }
+    }catch(_){}
+  }
+
+  const apiRef=bibleApiRef(local.ref);
+  try{
+    const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+    const timer=ctrl?setTimeout(()=>ctrl.abort(),9000):null;
+    const res=await fetch(
+      `https://bible-api.com/${encodeURIComponent(apiRef)}?translation=almeida`,
+      ctrl?{signal:ctrl.signal}:{}
+    );
+    if(timer) clearTimeout(timer);
+    if(!res.ok) return;
+    const data=await res.json();
+    const text=String(data.text||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
+    if(!text) return;
+    const verse={text,ref:data.reference||local.ref};
+    applyDailyVerseToDOM(verse);
+    try{localStorage.setItem(dailyVerseCacheKey(today),JSON.stringify(verse));}catch(_){}
+  }catch(_){}
+}
+function renderDailyVerse(){
+  loadDailyVerse();
+}
+window.loadDailyVerse=loadDailyVerse;
 function copyDailyVerse(){
-  const verse=getDailyVerse();
+  const verse=dailyVerseCache||getDailyVerse();
   const text=`"${verse.text}" — ${verse.ref}`;
   const done=()=>showToast('📋','Copiado','Versículo do dia na área de transferência.');
   if(navigator.clipboard?.writeText){
@@ -3177,7 +3225,7 @@ function showDailyVerseWelcome(){
   if(state.dailyVerseShownDate===today) return;
   state.dailyVerseShownDate=today;
   save();
-  const v=getDailyVerse();
+  const v=dailyVerseCache||getDailyVerse();
   setTimeout(()=>{
     showToast('📖','Versículo do dia',`"${v.text}" — ${v.ref}`);
   },3500);
@@ -4009,7 +4057,7 @@ function updateClock(){
   const name=state.userName?`, <span>${state.userName}</span>`:'';
   document.getElementById('greeting-main').innerHTML=`<span>${gr}${name}</span>`;
   document.getElementById('greeting-tag').textContent=new Date().toLocaleString('pt-BR',{weekday:'long'}).replace(/^\w/,c=>c.toUpperCase());
-  if(lastRenderedVerseDate!==todayStr()) renderDailyVerse();
+  if(lastRenderedVerseDate!==todayStr()) loadDailyVerse();
   checkAlarms(now);
   checkInactivityPeriod();
   checkWorkSessionBreak();
@@ -7840,7 +7888,8 @@ function setView(view, el){
     content.classList.remove('view-panel');
     void content.offsetWidth;
     content.classList.add('view-panel');
-    if(view==='dashboard') animateDashboardBlocks();
+    if(view==='dashboard') loadDailyVerse();
+    animateDashboardBlocks();
   }
 
   document.querySelectorAll('.sidebar .nav-item').forEach(item => {
@@ -7926,6 +7975,8 @@ function bootstrapApp(){
 initTranslator();
 initCyberAmbient();
 initAuth();
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>loadDailyVerse());
+else loadDailyVerse();
 </script>
 </body>
 </html>
