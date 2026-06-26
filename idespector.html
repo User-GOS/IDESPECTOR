@@ -218,7 +218,7 @@
   .dashboard-bento .card:not(#clock-card) { display:flex; flex-direction:column; min-height:280px; }
   .dashboard-bento #agenda-card { min-height:0; }
   #clock-card {
-    grid-column:1 / -1;
+    margin-bottom:16px;
     min-height:auto !important;
     height:auto;
     align-self:stretch;
@@ -770,6 +770,8 @@
 
   /* CONTENT */
   .content { padding: 28px 32px 48px; max-width:1440px; margin:0 auto; width:100%; flex:1; }
+  #main-content.view-dashboard-compact { padding-top:12px; }
+  #clock-card { margin-bottom:16px; }
 
   /* QUICK STRIP — grade 3×2 SaaS */
   .quick-strip {
@@ -2696,6 +2698,21 @@
     <div class="view-bar-actions" id="view-actions"></div>
   </div>
 
+  <!-- Foco & Tempo — topo do dashboard -->
+  <div class="card" id="clock-card">
+    <div class="card-header">
+      <div class="card-title"><span class="dot"></span>Foco & Tempo</div>
+      <div class="chip green live">Ao vivo</div>
+    </div>
+    <div class="foco-layout">
+      <div class="foco-info">
+        <div class="foco-time" id="main-clock">00:00:00</div>
+        <div class="foco-date" id="main-date">—</div>
+        <div class="foco-tz" id="main-tz">Horário de Brasília (UTC-3)</div>
+      </div>
+    </div>
+  </div>
+
   <!-- QUICK ACTIONS -->
   <div class="quick-strip" id="quick-strip">
     <button class="quick-strip-btn primary" onclick="openModal('task')">
@@ -2756,22 +2773,8 @@
     </div>
   </div>
 
-  <!-- ROW 1: Foco + Agenda -->
+  <!-- ROW: Agenda -->
   <div class="dashboard-bento" id="row-dashboard-top">
-    <div class="card" id="clock-card">
-      <div class="card-header">
-        <div class="card-title"><span class="dot"></span>Foco & Tempo</div>
-        <div class="chip green live">Ao vivo</div>
-      </div>
-      <div class="foco-layout">
-        <div class="foco-info">
-          <div class="foco-time" id="main-clock">00:00:00</div>
-          <div class="foco-date" id="main-date">—</div>
-          <div class="foco-tz" id="main-tz">Horário de Brasília (UTC-3)</div>
-        </div>
-      </div>
-    </div>
-
     <div class="card" id="agenda-card">
       <div class="card-header">
         <div class="card-title">
