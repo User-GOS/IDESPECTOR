@@ -3696,7 +3696,7 @@ function migrateGamification(){
   if(!state.gamification){
     state.gamification={
       xp:0,level:0,totalHabitsCompleted:0,
-      perfectDays:0,perfectDaysLog:{},badges:[],gameCleared:false,
+      perfectDays:0,perfectDaysLog:{},badges:[],
     };
     save();
     return;
@@ -3705,7 +3705,7 @@ function migrateGamification(){
   if(!g.badges) g.badges=[];
   if(!g.perfectDaysLog) g.perfectDaysLog={};
   if(g.perfectDays===undefined) g.perfectDays=Object.keys(g.perfectDaysLog).length;
-  if(g.gameCleared===undefined) g.gameCleared=calcGamificationLevel(g.xp||0)>=GAME_MAX_LEVEL;
+  delete g.gameCleared;
   g.level=calcGamificationLevel(g.xp||0);
 }
 function migrateTranslator(){
@@ -3970,7 +3970,7 @@ function createEmptyUserState(name){
     currentView:'dashboard',taskFilter:null,
     notes:{content:'',updated:null},
     habits:[],goals:[],
-    gamification:{xp:0,level:0,totalHabitsCompleted:0,perfectDays:0,perfectDaysLog:{},badges:[],gameCleared:false},
+    gamification:{xp:0,level:0,totalHabitsCompleted:0,perfectDays:0,perfectDaysLog:{},badges:[]},
     workSession:{
       enabled:true,segmentStart:null,accumulatedMs:0,lastActivity:null,
       inactivityMs:15*60*1000,thresholdMs:4*60*60*1000,
@@ -5250,7 +5250,7 @@ const GAMIFICATION_XP={
   perfectDay:50,
   firstOfDay:5,
 };
-const GAME_MAX_LEVEL=10;
+const LEVEL_THEME_MAX=10;
 
 function getGamification(){
   migrateGamification();
@@ -5284,7 +5284,8 @@ function xpProgressInLevel(xp,level){
 
 function gamificationRank(level){
   const lv=Math.max(0,level|0);
-  return GAMIFICATION_RANKS[Math.min(lv,GAMIFICATION_RANKS.length-1)]||'IDespector Elite';
+  if(lv<GAMIFICATION_RANKS.length) return GAMIFICATION_RANKS[lv];
+  return `IDespector Elite · ${formatGameLevel(lv)}`;
 }
 
 function hasBadge(id){
@@ -5362,9 +5363,7 @@ function awardHabitGamification(habit){
     perfectDay=true;
   }
   const badges=checkGamificationBadges(habit);
-  const gameZeroed=g.level>=GAME_MAX_LEVEL&&prevLevel<GAME_MAX_LEVEL;
-  if(gameZeroed) g.gameCleared=true;
-  return {xp,streak,leveledUp,prevLevel,level:g.level,rank:gamificationRank(g.level),badges,perfectDay,perfectXp,gameZeroed,habitName:habit.name};
+  return {xp,streak,leveledUp,prevLevel,level:g.level,rank:gamificationRank(g.level),badges,perfectDay,perfectXp,habitName:habit.name};
 }
 
 function showXpFloat(text){
@@ -5442,11 +5441,6 @@ function closeLevelUpOverlay(){
   document.getElementById('level-up-overlay')?.classList.remove('show');
   document.body.classList.remove('level-up-active');
   document.getElementById('level-up-burst')?.replaceChildren();
-  if(window._pendingGameZero){
-    const fn=window._pendingGameZero;
-    window._pendingGameZero=null;
-    setTimeout(fn,400);
-  }
 }
 window.closeLevelUpOverlay=closeLevelUpOverlay;
 window.showLevelUpOverlay=showLevelUpOverlay;
@@ -5492,7 +5486,7 @@ function resetGamificationGame(){
   if(!confirm('Zerar todo o progresso do game?\n\nNível, XP, conquistas e dias perfeitos voltam ao zero.')) return;
   state.gamification={
     xp:0,level:0,totalHabitsCompleted:0,
-    perfectDays:0,perfectDaysLog:{},badges:[],gameCleared:false,
+    perfectDays:0,perfectDaysLog:{},badges:[],
   };
   save();
   renderHabits();
@@ -5508,20 +5502,13 @@ function showGamificationFeedback(result){
   if(result.streak>1) floatText+=` · 🔥${result.streak}`;
   showXpFloat(floatText);
   showToast('⭐',`${result.habitName} concluído!`,`+${result.xp} XP${result.streak>1?` · sequência ${result.streak} dias`:''}`);
-  if(result.gameZeroed){
-    window._pendingGameZero=()=>showGameZeroOverlay(result.level,result.rank);
-  }
   if(result.leveledUp){
     const levelFn=()=>showLevelUpOverlay(result.level,result.rank,result.prevLevel);
     if(result.perfectDay){
       window._pendingLevelUp=levelFn;
-    }else if(result.gameZeroed){
-      window._pendingLevelUp=levelFn;
     }else{
       setTimeout(levelFn,550);
     }
-  }else if(result.gameZeroed){
-    setTimeout(()=>showGameZeroOverlay(result.level,result.rank),650);
   }
   for(const b of result.badges||[]){
     setTimeout(()=>showToast(b.icon,'Conquista desbloqueada!',`${b.name} — ${b.desc}`),800);
@@ -5542,7 +5529,6 @@ function renderGamificationPanel(){
   const pct=xpProgressInLevel(xp,level);
   const next=xpThresholdForLevel(level+1);
   const rank=gamificationRank(level);
-  const maxed=level>=GAME_MAX_LEVEL||g.gameCleared;
   const earned=new Set(g.badges||[]);
   const badgesHtml=GAMIFICATION_BADGES.slice(0,6).map(b=>{
     const on=earned.has(b.id);
@@ -5555,10 +5541,7 @@ function renderGamificationPanel(){
       ?`<div class="habit-daily-bonus">🏆 Dia perfeito conquistado! +${GAMIFICATION_XP.perfectDay} XP</div>`
       :`<div class="habit-daily-bonus pending">${done}/${total} hábitos · complete todos para +${GAMIFICATION_XP.perfectDay} XP</div>`)
     :'';
-  const clearedHtml=maxed?`<div class="habit-game-cleared">🎮 Game zerado · nível máximo</div>`:'';
-  const xpLabel=maxed
-    ?`${xp} XP · nível máximo conquistado`
-    :`${xp} / ${next} XP para o nível ${formatGameLevel(level+1)}`;
+  const xpLabel=`${xp} / ${next} XP para o nível ${formatGameLevel(level+1)}`;
   return `<div class="habit-gamification">
     <div class="habit-gam-head">
       <div class="habit-gam-level">
@@ -5570,11 +5553,10 @@ function renderGamificationPanel(){
       </div>
       <div class="habit-xp-total">${xp} XP</div>
     </div>
-    <div class="habit-xp-bar"><div class="habit-xp-fill" style="width:${maxed?100:pct}%"></div></div>
+    <div class="habit-xp-bar"><div class="habit-xp-fill" style="width:${pct}%"></div></div>
     <div class="habit-xp-label">${xpLabel}</div>
     <div class="habit-badges-row">${badgesHtml}</div>
     ${bonusHtml}
-    ${clearedHtml}
     <div class="habit-gam-actions">
       <button type="button" class="btn btn-ghost btn-xs habit-reset-game" onclick="resetGamificationGame()" title="Reiniciar nível, XP e conquistas">↺ Zerar game</button>
     </div>
@@ -6192,7 +6174,7 @@ function updateMetrics(){
 // THEME
 // ============================================================
 function applyLevelTheme(level){
-  const lv=Math.min(Math.max(0,level|0),GAME_MAX_LEVEL);
+  const lv=Math.min(Math.max(0,level|0),LEVEL_THEME_MAX);
   document.documentElement.setAttribute('data-level-tier',String(lv));
 }
 function syncLevelTheme(){
