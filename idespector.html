@@ -1249,7 +1249,74 @@
   @keyframes typingbounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
 
   /* AGENDA */
-  #agenda-card .card-body-scroll { padding:4px 2px 4px 0; max-height:320px; }
+  #agenda-card { min-height:340px; display:flex; flex-direction:column; }
+  #agenda-card .agenda-layout { flex:1; min-height:280px; }
+  #agenda-card .card-body-scroll { padding:4px 2px 4px 0; max-height:360px; }
+  .agenda-layout {
+    display:grid;
+    grid-template-columns:minmax(248px,280px) minmax(0,1fr);
+    gap:16px;
+    flex:1;
+    min-height:0;
+  }
+  .agenda-calendar-wrap {
+    padding:12px;
+    border-radius:var(--radius-md);
+    background:var(--bg-glass);
+    border:1px solid var(--border);
+    align-self:start;
+  }
+  .agenda-cal-head {
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px; margin-bottom:10px;
+  }
+  .agenda-cal-title {
+    font-size:13px; font-weight:700; color:var(--text-primary);
+    text-transform:capitalize; letter-spacing:-0.02em; flex:1; text-align:center;
+  }
+  .agenda-cal-nav {
+    width:28px; height:28px; padding:0; min-width:28px;
+    font-size:16px; line-height:1;
+  }
+  .agenda-cal-dows {
+    display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:4px;
+  }
+  .agenda-cal-dow {
+    font-size:10px; font-weight:700; text-align:center;
+    color:var(--text-muted); text-transform:uppercase; padding:2px 0;
+  }
+  .agenda-cal-grid {
+    display:grid; grid-template-columns:repeat(7,1fr); gap:2px;
+  }
+  .agenda-cal-day {
+    aspect-ratio:1; border:none; border-radius:8px;
+    background:transparent; color:var(--text-secondary);
+    font-size:12px; font-weight:500; cursor:pointer;
+    position:relative; transition:background .15s, color .15s;
+    font-family:inherit;
+  }
+  .agenda-cal-day:hover { background:var(--bg-elevated); color:var(--text-primary); }
+  .agenda-cal-day.other-month { opacity:.35; }
+  .agenda-cal-day.today {
+    box-shadow:inset 0 0 0 1px var(--accent);
+    color:var(--accent-2); font-weight:700;
+  }
+  .agenda-cal-day.selected {
+    background:var(--accent-dim); color:var(--text-primary); font-weight:700;
+  }
+  .agenda-cal-day.selected.today { background:rgba(59,130,246,0.22); }
+  .agenda-cal-day.has-events::after {
+    content:''; position:absolute; bottom:4px; left:50%;
+    transform:translateX(-50%); width:4px; height:4px;
+    border-radius:50%; background:var(--accent);
+  }
+  .agenda-cal-today {
+    display:block; width:100%; margin-top:10px; padding:6px 0;
+    border:none; border-radius:8px; background:transparent;
+    color:var(--accent-2); font-size:11px; font-weight:600;
+    cursor:pointer; transition:background .15s;
+  }
+  .agenda-cal-today:hover { background:var(--accent-dim); }
   #agenda-card .agenda-count {
     font-size:11px; font-weight:600; color:var(--text-muted);
     padding:3px 10px; border-radius:999px;
@@ -1889,6 +1956,8 @@
     .view-dashboard-compact .quick-strip { grid-template-columns:repeat(3,1fr); }
   }
   @media(max-width:768px) {
+    .agenda-layout { grid-template-columns:1fr; }
+    .agenda-calendar-wrap { max-width:100%; }
     .sidebar { transform:translateX(-100%); width:var(--sidebar-w); }
     .sidebar.open { transform:translateX(0); }
     .main { margin-left:0; }
@@ -2766,12 +2835,17 @@
     <div class="card" id="agenda-card">
       <div class="card-header">
         <div class="card-title">
-          <span class="dot"></span>Agenda do Dia
+          <span class="dot"></span><span id="agenda-day-title">Agenda do Dia</span>
           <span class="agenda-count" id="agenda-count-badge">0</span>
         </div>
         <button class="btn btn-primary btn-sm btn-add" onclick="openModal('event')">Evento</button>
       </div>
-      <div class="card-body-scroll" id="agenda-list"><div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></div><span>Nenhum compromisso hoje.</span></div></div>
+      <div class="agenda-layout">
+        <div class="agenda-calendar-wrap">
+          <div id="agenda-calendar" aria-label="Calendário"></div>
+        </div>
+        <div class="card-body-scroll agenda-list-wrap" id="agenda-list"><div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></div><span>Nenhum compromisso hoje.</span></div></div>
+      </div>
     </div>
   </div>
 
@@ -3175,6 +3249,11 @@ function formatEventDate(dateStr){
   if(!dateStr||dateStr===todayStr()) return 'Hoje';
   const p=dateStr.split('-').map(Number);
   return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
+}
+function formatAgendaDayTitle(dateStr){
+  const p=dateStr.split('-').map(Number);
+  const label=new Date(p[0],p[1]-1,p[2]).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  return label.charAt(0).toUpperCase()+label.slice(1);
 }
 function formatReminderWhen(r){
   if(!r.date) return r.time||'';
@@ -4926,15 +5005,88 @@ function renderAlarms(){
   `).join('');
 }
 
+let _calYear=new Date().getFullYear();
+let _calMonth=new Date().getMonth();
+let _calSelected=todayStr();
+
+function shiftAgendaCalMonth(delta){
+  _calMonth+=delta;
+  while(_calMonth>11){ _calMonth-=12; _calYear++; }
+  while(_calMonth<0){ _calMonth+=12; _calYear--; }
+  renderAgendaCalendar();
+}
+
+function goAgendaToday(){
+  const now=new Date();
+  _calYear=now.getFullYear();
+  _calMonth=now.getMonth();
+  _calSelected=todayStr();
+  renderAgenda();
+}
+
+function selectAgendaDate(dateStr){
+  _calSelected=dateStr;
+  const p=dateStr.split('-').map(Number);
+  _calYear=p[0];
+  _calMonth=p[1]-1;
+  renderAgenda();
+}
+
+function renderAgendaCalendar(){
+  const el=document.getElementById('agenda-calendar');
+  if(!el) return;
+  const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const dow=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const today=todayStr();
+  const first=new Date(_calYear,_calMonth,1);
+  const startPad=first.getDay();
+  const daysInMonth=new Date(_calYear,_calMonth+1,0).getDate();
+  const daysInPrev=new Date(_calYear,_calMonth,0).getDate();
+  const eventDays=new Set((state.events||[]).map(e=>eventDate(e)));
+  let cells='';
+  for(let i=startPad-1;i>=0;i--){
+    const day=daysInPrev-i;
+    const ds=localDateStr(new Date(_calYear,_calMonth-1,day));
+    cells+=`<button type="button" class="agenda-cal-day other-month${ds===_calSelected?' selected':''}${eventDays.has(ds)?' has-events':''}" onclick="selectAgendaDate('${ds}')">${day}</button>`;
+  }
+  for(let day=1;day<=daysInMonth;day++){
+    const ds=`${_calYear}-${String(_calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const cls=['agenda-cal-day',ds===today?'today':'',ds===_calSelected?'selected':'',eventDays.has(ds)?'has-events':''].filter(Boolean).join(' ');
+    cells+=`<button type="button" class="${cls}" onclick="selectAgendaDate('${ds}')">${day}</button>`;
+  }
+  const totalCells=startPad+daysInMonth;
+  const remainder=totalCells%7===0?0:7-totalCells%7;
+  for(let day=1;day<=remainder;day++){
+    const ds=localDateStr(new Date(_calYear,_calMonth+1,day));
+    cells+=`<button type="button" class="agenda-cal-day other-month${ds===_calSelected?' selected':''}${eventDays.has(ds)?' has-events':''}" onclick="selectAgendaDate('${ds}')">${day}</button>`;
+  }
+  el.innerHTML=`<div class="agenda-cal">
+    <div class="agenda-cal-head">
+      <button type="button" class="btn btn-ghost btn-sm agenda-cal-nav" onclick="shiftAgendaCalMonth(-1)" aria-label="Mês anterior">‹</button>
+      <span class="agenda-cal-title">${monthNames[_calMonth]} ${_calYear}</span>
+      <button type="button" class="btn btn-ghost btn-sm agenda-cal-nav" onclick="shiftAgendaCalMonth(1)" aria-label="Próximo mês">›</button>
+    </div>
+    <div class="agenda-cal-dows">${dow.map(d=>`<span class="agenda-cal-dow">${d}</span>`).join('')}</div>
+    <div class="agenda-cal-grid">${cells}</div>
+    <button type="button" class="agenda-cal-today" onclick="goAgendaToday()">Ir para hoje</button>
+  </div>`;
+}
+
 function renderAgenda(){
   const el=document.getElementById('agenda-list');
   const badge=document.getElementById('agenda-count-badge');
-  const todayEvents=eventsOnDate(todayStr());
-  if(badge) badge.textContent=todayEvents.length?`${todayEvents.length} evento${todayEvents.length>1?'s':''}`:'0';
-  if(!todayEvents.length){el.innerHTML=emptyState('Nenhum compromisso hoje.','event');return;}
+  const titleEl=document.getElementById('agenda-day-title');
+  renderAgendaCalendar();
+  const selected=_calSelected||todayStr();
+  const dayEvents=eventsOnDate(selected);
+  if(titleEl) titleEl.textContent=selected===todayStr()?'Agenda do Dia':formatAgendaDayTitle(selected);
+  if(badge) badge.textContent=dayEvents.length?`${dayEvents.length} evento${dayEvents.length>1?'s':''}`:'0';
+  const emptyMsg=selected===todayStr()?'Nenhum compromisso hoje.':'Nenhum compromisso neste dia.';
+  if(!dayEvents.length){el.innerHTML=emptyState(emptyMsg,'event');return;}
+  const isToday=selected===todayStr();
   const now=new Date().toTimeString().slice(0,5);
-  const sorted=[...todayEvents].sort((a,b)=>a.time.localeCompare(b.time));
-  const nextId=sorted.find(e=>e.time>=now)?.id||sorted[0]?.id;
+  const sorted=[...dayEvents].sort((a,b)=>a.time.localeCompare(b.time));
+  const nextId=isToday?(sorted.find(e=>e.time>=now)?.id||sorted[0]?.id):null;
   el.innerHTML=sorted.map(e=>`
     <div class="agenda-item ${e.id===nextId?'agenda-next':''}">
       <div class="agenda-time-block">
@@ -7476,6 +7628,9 @@ window.clearTranslatorInput=clearTranslatorInput;
 window.copyTranslation=copyTranslation;
 window.useTranslationAsInput=useTranslationAsInput;
 window.insertTranslatorPhrase=insertTranslatorPhrase;
+window.shiftAgendaCalMonth=shiftAgendaCalMonth;
+window.selectAgendaDate=selectAgendaDate;
+window.goAgendaToday=goAgendaToday;
 
 // ============================================================
 // NAV
@@ -7502,7 +7657,7 @@ const VIEW_META = {
   tasks: { title:'Tarefas', sub:'Lista e Kanban das suas tarefas' },
   alarms: { title:'Despertadores', sub:'Seus alarmes configurados' },
   reminders: { title:'Lembretes', sub:'Não perca nada importante' },
-  agenda: { title:'Agenda', sub:'Compromissos de hoje' },
+  agenda: { title:'Agenda', sub:'Calendário e compromissos' },
   notes: { title:'Bloco de Notas', sub:'Rascunhos e anotações rápidas — salva automaticamente' },
   productivity: { title:'Produtividade', sub:'Pomodoro, hábitos, metas e Kanban' },
   translator: { title:'Tradutor', sub:'Tradução português ↔ inglês em tempo real' },
