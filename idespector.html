@@ -422,11 +422,7 @@
     border-radius:10px;
   }
   [data-theme="light"] .header-chat-row .chat-input { background:rgba(255,255,255,0.75); }
-  .header-chat-row .chat-send-btn {
-    min-height:36px; height:36px; width:auto; min-width:36px;
-    padding:0 14px !important; border-radius:10px !important; flex-shrink:0;
-    gap:6px; overflow:visible;
-  }
+  .header-chat-row .chat-input { width:100%; }
   .header-quick-btns {
     display:flex; flex-wrap:nowrap; gap:5px; margin-top:6px;
     overflow-x:auto; padding-bottom:2px; scrollbar-width:none;
@@ -535,10 +531,6 @@
   }
   .main.view-assistant .header-chat-row .chat-input {
     min-height:42px; max-height:120px; font-size:14px; padding:10px 14px;
-  }
-  .main.view-assistant .header-chat-row .chat-send-btn {
-    min-height:42px; height:42px; min-width:42px;
-    padding:0 16px !important;
   }
   .main.view-assistant #main-content { display:none; }
   .theme-btn, .notif-btn {
@@ -1203,14 +1195,6 @@
     transition:border-color .2s, box-shadow .2s;
   }
   .chat-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
-  .chat-send-btn {
-    width:auto; min-width:42px; min-height:42px; height:42px;
-    padding:0 16px !important; border-radius:12px !important;
-    display:inline-flex; align-items:center; justify-content:center;
-    gap:6px; flex-shrink:0; white-space:nowrap; overflow:visible;
-  }
-  .chat-send-btn .send-icon { font-size:14px; line-height:1; flex-shrink:0; }
-  .chat-send-btn .send-label { font-size:12px; font-weight:700; line-height:1; }
   .typing-indicator {
     display:flex; gap:4px; padding:8px 14px; align-self:flex-start;
     background: var(--bg-glass); border:1px solid var(--border);
@@ -1902,14 +1886,6 @@
 
   /* Ações em listas */
   .list-actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
-  @media (max-width: 720px) {
-    .chat-send-btn .send-label { display:none; }
-    .chat-send-btn,
-    .header-chat-row .chat-send-btn {
-      width:42px; min-width:42px; padding:0 !important; gap:0;
-    }
-    .header-chat-row .chat-send-btn { width:36px; min-width:36px; height:36px; }
-  }
   .view-dashboard-compact .quick-strip { flex-wrap:wrap; }
   @media (max-width: 900px) {
     .quick-strip-btn .qs-hint { display:none; }
@@ -2632,9 +2608,8 @@
             <button type="button" class="header-chat-clear" onclick="clearChat()" title="Limpar conversa">Limpar</button>
           </div>
           <div class="chat-input-row header-chat-row">
-            <textarea class="chat-input" id="chat-input" placeholder="Pergunte algo — tarefas, lembretes, agenda..." rows="1"
+            <textarea class="chat-input" id="chat-input" placeholder="Pergunte algo — Enter para enviar, Shift+Enter para nova linha" rows="1"
               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
-            <button type="button" class="btn btn-primary chat-send-btn" onclick="sendMessage()" title="Enviar mensagem" aria-label="Enviar mensagem"><span class="send-icon" aria-hidden="true">➤</span><span class="send-label">Enviar</span></button>
           </div>
           <div class="header-quick-btns">
             <div class="quick-btn" onclick="assistantQuick('hoje')">Hoje</div>
