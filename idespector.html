@@ -484,6 +484,105 @@
   @media (max-width:480px) {
     .weather-forecast { grid-template-columns:repeat(5, minmax(52px, 1fr)); overflow-x:auto; padding-bottom:2px; }
   }
+
+  /* CHAT IA — canto inferior */
+  .ai-chat {
+    position:fixed; right:20px; bottom:calc(20px + var(--safe-bottom));
+    z-index:125; display:flex; flex-direction:column; align-items:flex-end; gap:12px;
+    pointer-events:none;
+  }
+  body.auth-locked .ai-chat { display:none; }
+  body.authenticated .ai-chat { pointer-events:auto; }
+  @media (max-width:768px) {
+    .ai-chat {
+      right:12px;
+      bottom:calc(12px + var(--bottom-nav-h) + var(--safe-bottom));
+    }
+  }
+  .ai-chat-panel {
+    width:min(380px, calc(100vw - 24px)); max-height:min(520px, calc(100dvh - 120px));
+    background:var(--bg-card); border:1px solid var(--border);
+    border-radius:var(--radius-lg); box-shadow:0 20px 50px rgba(0,0,0,0.35);
+    display:flex; flex-direction:column; overflow:hidden;
+    transform:translateY(12px) scale(0.96); opacity:0; pointer-events:none;
+    transition:opacity .22s var(--ease-out), transform .22s var(--ease-out);
+    transform-origin:bottom right;
+  }
+  .ai-chat-panel.open {
+    transform:translateY(0) scale(1); opacity:1; pointer-events:auto;
+  }
+  .ai-chat-head {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:14px 16px; border-bottom:1px solid var(--border); flex-shrink:0;
+    background:var(--bg-elevated);
+  }
+  .ai-chat-head-title {
+    font-size:13px; font-weight:800; color:var(--text-primary);
+    display:flex; align-items:center; gap:8px;
+  }
+  .ai-chat-head-actions { display:flex; gap:4px; }
+  .ai-chat-head-actions .btn-icon {
+    width:32px; height:32px; border-radius:var(--radius-sm);
+    border:1px solid var(--border); background:var(--bg-glass);
+    color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-size:14px; padding:0;
+  }
+  .ai-chat-head-actions .btn-icon:hover { color:var(--text-primary); border-color:var(--border-bright); }
+  .ai-chat-messages {
+    flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px;
+    min-height:180px; max-height:min(360px, 50dvh);
+  }
+  .ai-chat-msg {
+    max-width:92%; padding:10px 12px; border-radius:14px;
+    font-size:13px; line-height:1.5; word-break:break-word; white-space:pre-wrap;
+  }
+  .ai-chat-msg.user {
+    align-self:flex-end; background:var(--accent); color:#fff;
+    border-bottom-right-radius:4px;
+  }
+  .ai-chat-msg.assistant {
+    align-self:flex-start; background:var(--bg-elevated); color:var(--text-primary);
+    border:1px solid var(--border); border-bottom-left-radius:4px;
+  }
+  .ai-chat-msg.system {
+    align-self:center; font-size:11px; color:var(--text-muted); font-style:italic;
+    background:transparent; padding:4px 0; max-width:100%; text-align:center;
+  }
+  .ai-chat-msg.typing {
+    align-self:flex-start; color:var(--text-muted); font-style:italic;
+    background:var(--bg-elevated); border:1px solid var(--border);
+  }
+  .ai-chat-compose {
+    display:flex; gap:8px; padding:12px 14px; border-top:1px solid var(--border);
+    background:var(--bg-secondary); flex-shrink:0; align-items:flex-end;
+  }
+  .ai-chat-input {
+    flex:1; min-height:42px; max-height:120px; resize:none;
+    padding:10px 12px; border-radius:var(--radius-md);
+    border:1px solid var(--border); background:var(--bg-elevated);
+    color:var(--text-primary); font-family:inherit; font-size:14px; line-height:1.4;
+  }
+  .ai-chat-input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
+  .ai-chat-fab {
+    width:56px; height:56px; border-radius:999px; border:none; cursor:pointer;
+    background:linear-gradient(135deg, var(--accent), var(--accent-hover));
+    color:#fff; box-shadow:0 8px 28px rgba(59,130,246,0.45);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .2s var(--ease-out), box-shadow .2s;
+    pointer-events:auto;
+  }
+  .ai-chat-fab:hover { transform:translateY(-2px); box-shadow:0 12px 32px rgba(59,130,246,0.5); }
+  .ai-chat-fab:active { transform:scale(0.96); }
+  .ai-chat-fab svg { width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:2; }
+  .ai-chat-panel.open ~ .ai-chat-fab { transform:scale(0.9); opacity:0.85; }
+  .ai-chat-settings {
+    padding:12px 16px; border-top:1px solid var(--border); background:var(--bg-elevated);
+    display:none; flex-direction:column; gap:8px;
+  }
+  .ai-chat-settings.show { display:flex; }
+  .ai-chat-settings label { font-size:11px; font-weight:700; color:var(--text-muted); }
+  .ai-chat-settings .input-field { font-size:12px; }
+  .ai-chat-settings-hint { font-size:10px; color:var(--text-muted); line-height:1.45; }
   #row-agenda-habits #agenda-card { min-height:0; }
   #row-agenda-habits #habits-card { min-height:0; }
   .card-body-scroll {
@@ -3321,6 +3420,32 @@
   </div>
 </div>
 
+<div class="ai-chat" id="ai-chat" aria-live="polite">
+  <div class="ai-chat-panel" id="ai-chat-panel" role="dialog" aria-label="Assistente IA">
+    <div class="ai-chat-head">
+      <div class="ai-chat-head-title"><span aria-hidden="true">✨</span> Assistente IA</div>
+      <div class="ai-chat-head-actions">
+        <button type="button" class="btn-icon" onclick="toggleAiChatSettings()" title="Configurar chave API" aria-label="Configurar">⚙</button>
+        <button type="button" class="btn-icon" onclick="clearAiChat()" title="Limpar conversa" aria-label="Limpar">🗑</button>
+        <button type="button" class="btn-icon" onclick="toggleAiChat(false)" title="Fechar" aria-label="Fechar">✕</button>
+      </div>
+    </div>
+    <div class="ai-chat-messages" id="ai-chat-messages"></div>
+    <div class="ai-chat-settings" id="ai-chat-settings">
+      <label for="ai-api-key">Chave OpenAI (opcional, só no seu navegador)</label>
+      <input class="input-field" type="password" id="ai-api-key" placeholder="sk-..." autocomplete="off" onchange="saveAiSettings()">
+      <p class="ai-chat-settings-hint">Use se o servidor não tiver OPENAI_API_KEY. A chave fica salva localmente na sua conta.</p>
+    </div>
+    <form class="ai-chat-compose" id="ai-chat-form" onsubmit="submitAiChat(event)">
+      <textarea class="ai-chat-input" id="ai-chat-input" rows="1" placeholder="Pergunte algo..." maxlength="2000" aria-label="Mensagem para a IA"></textarea>
+      <button type="submit" class="btn btn-primary btn-sm" id="ai-chat-send">Enviar</button>
+    </form>
+  </div>
+  <button type="button" class="ai-chat-fab" id="ai-chat-fab" onclick="toggleAiChat()" title="Abrir assistente IA" aria-label="Abrir chat com IA">
+    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </button>
+</div>
+
 <script>
 // ============================================================
 // STATE
@@ -3894,6 +4019,157 @@ async function loadWeather(force=false){
 }
 window.loadWeather=loadWeather;
 
+// ============================================================
+// CHAT IA
+// ============================================================
+let aiChatOpen=false;
+let aiChatBusy=false;
+function escChatText(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function migrateAi(){
+  if(!state.ai) state.ai={apiKey:''};
+  if(!Array.isArray(state.chat)) state.chat=[];
+}
+function buildAiPanelContext(){
+  const pending=state.tasks?.filter(t=>!t.done).length||0;
+  const done=state.tasks?.filter(t=>t.done).length||0;
+  const habits=state.habits?.length||0;
+  const habitsDone=typeof habitsCompletedToday==='function'?habitsCompletedToday():0;
+  const reminders=state.reminders?.length||0;
+  const alarms=state.alarms?.filter(a=>a.on).length||0;
+  const level=state.gamification?.level||0;
+  const name=state.userName||'Usuário';
+  return `Usuário: ${name}. Tarefas: ${pending} pendentes, ${done} concluídas. Hábitos: ${habitsDone}/${habits} hoje. Lembretes: ${reminders}. Alarmes ativos: ${alarms}. Nível de hábitos: ${level}.`;
+}
+function renderAiChatMessages(){
+  const el=document.getElementById('ai-chat-messages');
+  if(!el) return;
+  const msgs=state.chat||[];
+  if(!msgs.length){
+    el.innerHTML=`<div class="ai-chat-msg system">Olá! Sou o assistente do IDespector. Posso ajudar com produtividade, tarefas e organização.</div>`;
+    return;
+  }
+  el.innerHTML=msgs.map(m=>{
+    const role=m.role==='user'?'user':(m.role==='assistant'?'assistant':'system');
+    return `<div class="ai-chat-msg ${role}">${escChatText(m.content)}</div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function toggleAiChat(open){
+  const panel=document.getElementById('ai-chat-panel');
+  const fab=document.getElementById('ai-chat-fab');
+  if(!panel) return;
+  if(open===undefined) aiChatOpen=!aiChatOpen;
+  else aiChatOpen=!!open;
+  panel.classList.toggle('open',aiChatOpen);
+  if(fab) fab.setAttribute('aria-expanded',aiChatOpen?'true':'false');
+  if(aiChatOpen){
+    renderAiChatMessages();
+    setTimeout(()=>document.getElementById('ai-chat-input')?.focus(),180);
+  }
+}
+function toggleAiChatSettings(){
+  document.getElementById('ai-chat-settings')?.classList.toggle('show');
+  const keyEl=document.getElementById('ai-api-key');
+  if(keyEl&&!keyEl.value) keyEl.value=state.ai?.apiKey||'';
+}
+function saveAiSettings(){
+  if(!state.ai) state.ai={apiKey:''};
+  state.ai.apiKey=(document.getElementById('ai-api-key')?.value||'').trim();
+  save();
+  showToast('⚙','Chat IA','Chave API salva localmente.');
+}
+function clearAiChat(){
+  if(!confirm('Limpar toda a conversa com a IA?')) return;
+  state.chat=[];
+  save();
+  renderAiChatMessages();
+}
+async function fetchAiReply(userText){
+  const payload={
+    messages:(state.chat||[]).map(m=>({role:m.role,content:m.content})),
+    context:buildAiPanelContext(),
+  };
+  const key=(state.ai?.apiKey||'').trim();
+  if(key) payload.apiKey=key;
+  const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+  const timer=ctrl?setTimeout(()=>ctrl.abort(),50000):null;
+  const res=await fetch('/api/chat',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload),
+    ...(ctrl?{signal:ctrl.signal}:{}),
+  });
+  if(timer) clearTimeout(timer);
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok||!data.ok) throw new Error(data?.error||'Falha ao obter resposta da IA');
+  return data.reply;
+}
+async function submitAiChat(e){
+  e?.preventDefault();
+  if(aiChatBusy) return;
+  const input=document.getElementById('ai-chat-input');
+  const text=(input?.value||'').trim();
+  if(!text) return;
+  if(location.protocol==='file:'){
+    showToast('💬','Chat IA',`Abra pelo servidor: ${SERVER_URL}`);
+    return;
+  }
+  if(!state.chat) state.chat=[];
+  state.chat.push({id:Date.now(),role:'user',content:text,ts:Date.now()});
+  input.value='';
+  input.style.height='auto';
+  aiChatBusy=true;
+  renderAiChatMessages();
+  const msgsEl=document.getElementById('ai-chat-messages');
+  if(msgsEl){
+    msgsEl.insertAdjacentHTML('beforeend','<div class="ai-chat-msg typing" id="ai-chat-typing">Pensando...</div>');
+    msgsEl.scrollTop=msgsEl.scrollHeight;
+  }
+  const sendBtn=document.getElementById('ai-chat-send');
+  if(sendBtn) sendBtn.disabled=true;
+  try{
+    const reply=await fetchAiReply(text);
+    document.getElementById('ai-chat-typing')?.remove();
+    state.chat.push({id:Date.now()+1,role:'assistant',content:reply,ts:Date.now()});
+    save();
+    renderAiChatMessages();
+  }catch(err){
+    document.getElementById('ai-chat-typing')?.remove();
+    const msg=err?.message||'Erro ao conversar com a IA';
+    state.chat.push({id:Date.now()+1,role:'assistant',content:`⚠️ ${msg}`,ts:Date.now()});
+    save();
+    renderAiChatMessages();
+    if(/não configurada|OPENAI/i.test(msg)) toggleAiChatSettings();
+  }finally{
+    aiChatBusy=false;
+    if(sendBtn) sendBtn.disabled=false;
+    input?.focus();
+  }
+}
+function initAiChat(){
+  migrateAi();
+  const keyEl=document.getElementById('ai-api-key');
+  if(keyEl) keyEl.value=state.ai?.apiKey||'';
+  const input=document.getElementById('ai-chat-input');
+  if(input){
+    input.addEventListener('input',()=>{
+      input.style.height='auto';
+      input.style.height=Math.min(input.scrollHeight,120)+'px';
+    });
+    input.addEventListener('keydown',(ev)=>{
+      if(ev.key==='Enter'&&!ev.shiftKey){ ev.preventDefault(); submitAiChat(ev); }
+    });
+  }
+  renderAiChatMessages();
+}
+window.toggleAiChat=toggleAiChat;
+window.submitAiChat=submitAiChat;
+window.clearAiChat=clearAiChat;
+window.toggleAiChatSettings=toggleAiChatSettings;
+window.saveAiSettings=saveAiSettings;
+
 function copyDailyVerse(){
   const verse=dailyVerseCache||getDailyVerse();
   const text=`"${verse.text}" — ${verse.ref}`;
@@ -4225,6 +4501,7 @@ function createEmptyUserState(name){
       isInactive:false,inactiveSince:null,lastAlertCycle:0,inactivityAlertCycle:0,
     },
     translator:{dir:'pt-en'},
+    ai:{apiKey:''},
     appVersion:APP_VERSION,
   };
 }
@@ -4356,7 +4633,7 @@ function save(){
   if(!currentAuthUser) return;
   try{localStorage.setItem(userDataKey(currentAuthUser.id),JSON.stringify(state));}catch(e){}
 }
-const APP_VERSION='50-level-zero';
+const APP_VERSION='51-ai-chat';
 const SERVER_PORT=8772;
 const SERVER_URL=`http://localhost:${SERVER_PORT}/idespector.html`;
 function isLocalDev(){
@@ -4397,13 +4674,13 @@ function load(){
     migrateProductivity();
     migrateTranslator();
     migrateGamification();
+    migrateAi();
     migrateWorkSession();
     migrateWhatsApp();
     resetNotifFiredIfNeeded();
-    const needsReset=state.appVersion!==APP_VERSION
-      ||state.chat?.some(m=>m.content?.includes('Erro de conexão'));
+    const needsReset=state.appVersion!==APP_VERSION;
     if(needsReset){
-      state.chat=[];
+      if(state.chat?.some(m=>String(m.content||'').includes('Erro de conexão'))) state.chat=[];
       state.appVersion=APP_VERSION;
       save();
     }
@@ -6079,6 +6356,7 @@ function renderAll(){
   renderDailyVerse();
   renderDailyNews();
   updateMetrics();
+  if(typeof renderAiChatMessages==='function') renderAiChatMessages();
 }
 
 function getFilteredTasks(){
@@ -8689,6 +8967,7 @@ function bootstrapApp(){
   initWorkSessionWatch();
   load();
   initTranslator();
+  initAiChat();
   handleOutlookAuthCallback();
   ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
   document.addEventListener('visibilitychange',()=>{

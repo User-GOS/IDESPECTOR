@@ -19,6 +19,7 @@ Write-Host "Tradutor API: GET http://localhost:$Port/api/translate?q=ola&langpai
 Write-Host "Outlook ICS: POST http://localhost:$Port/api/outlook/ics"
 Write-Host "Noticias: GET http://localhost:$Port/api/news/daily"
 Write-Host "Tempo: GET http://localhost:$Port/api/weather/daily"
+Write-Host "Chat IA: POST http://localhost:$Port/api/chat"
 Write-Host "Pressione Ctrl+C para parar."
 
 function Add-CorsHeaders($response) {
@@ -403,6 +404,57 @@ while ($listener.IsListening) {
                 }
             } catch {
                 Send-Json $response 502 @{ ok = $false; error = "Erro ao buscar previsao do tempo" }
+            }
+            continue
+        }
+
+        if ($path -eq "/api/chat" -and $request.HttpMethod -eq "POST") {
+            $data = Read-JsonBody $request
+            $apiKey = [string]$data.apiKey
+            if ([string]::IsNullOrWhiteSpace($apiKey)) { $apiKey = [string]$env:OPENAI_API_KEY }
+            if ([string]::IsNullOrWhiteSpace($apiKey)) {
+                Send-Json $response 503 @{ ok = $false; error = "IA nao configurada. Defina OPENAI_API_KEY ou informe apiKey no corpo." }
+                continue
+            }
+            $messages = @()
+            if ($data.messages) { $messages = @($data.messages) }
+            $userMsgs = @($messages | Where-Object { $_.role -eq "user" -and -not [string]::IsNullOrWhiteSpace([string]$_.content) })
+            if ($userMsgs.Count -eq 0) {
+                Send-Json $response 400 @{ ok = $false; error = "Envie pelo menos uma mensagem do usuario." }
+                continue
+            }
+            $context = [string]$data.context
+            $system = "Voce e o assistente IA do IDespector. Responda em portugues do Brasil, de forma clara e objetiva."
+            if (-not [string]::IsNullOrWhiteSpace($context)) {
+                $system = "$system`n`nContexto atual do painel:`n$context"
+            }
+            $openAiMessages = @(@{ role = "system"; content = $system })
+            foreach ($m in ($messages | Select-Object -Last 20)) {
+                if ($m.role -eq "user" -or $m.role -eq "assistant") {
+                    $openAiMessages += @{ role = [string]$m.role; content = [string]$m.content }
+                }
+            }
+            try {
+                $model = if ($env:OPENAI_MODEL) { [string]$env:OPENAI_MODEL } else { "gpt-4o-mini" }
+                $payload = @{
+                    model = $model
+                    messages = $openAiMessages
+                    max_tokens = 900
+                    temperature = 0.65
+                } | ConvertTo-Json -Depth 8
+                $headers = @{
+                    Authorization = "Bearer $apiKey"
+                    "Content-Type" = "application/json"
+                }
+                $resp = Invoke-RestMethod -Uri "https://api.openai.com/v1/chat/completions" -Method Post -Headers $headers -Body $payload -TimeoutSec 45
+                $reply = [string]$resp.choices[0].message.content
+                if ([string]::IsNullOrWhiteSpace($reply)) {
+                    Send-Json $response 502 @{ ok = $false; error = "Resposta vazia da IA" }
+                    continue
+                }
+                Send-Json $response 200 @{ ok = $true; reply = $reply.Trim(); model = $model }
+            } catch {
+                Send-Json $response 502 @{ ok = $false; error = "Erro ao conversar com a IA: $($_.Exception.Message)" }
             }
             continue
         }
