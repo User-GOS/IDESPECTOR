@@ -366,6 +366,20 @@
   }
   .header-date { font-size:10px; color: var(--text-muted); margin-top:2px; }
   .header-actions { display:flex; align-items:center; gap:8px; }
+  .work-status-pill {
+    display:flex; align-items:center; gap:6px;
+    padding:0 12px; height:40px; border-radius:var(--radius-md);
+    font-size:11px; font-weight:600; font-family:inherit;
+    border:1px solid var(--border); background:var(--bg-glass);
+    color:var(--text-muted); cursor:pointer;
+    transition:border-color .2s, color .2s, background .2s;
+    white-space:nowrap;
+  }
+  .work-status-pill:hover { border-color:var(--border-bright); color:var(--text-primary); }
+  .work-status-pill.active { border-color:rgba(52,211,153,0.35); color:#34d399; }
+  .work-status-pill.inactive { border-color:rgba(251,191,36,0.35); color:#fbbf24; }
+  .work-status-pill.disabled { opacity:0.55; }
+  .work-status-dot { width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
   .theme-btn, .notif-btn {
     width:40px; height:40px; border-radius:var(--radius-md);
     background: var(--bg-glass); border: 1px solid var(--border);
@@ -2490,6 +2504,10 @@
         <div class="header-date" id="header-date">carregando...</div>
       </div>
       <div class="header-actions">
+        <button type="button" class="work-status-pill active" id="work-status-pill" onclick="openInactivitySettings()" title="Sessão de foco">
+          <span class="work-status-dot"></span>
+          <span id="work-status-label">Ativo</span>
+        </button>
         <div class="notif-btn" id="notif-btn" onclick="openNotifMenu()" title="Notificações" style="position:relative">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-badge" id="notif-count">3</span>
           <span class="tg-dot" id="tg-status-dot" title="Telegram desativado" style="top:-4px;left:-4px;bottom:auto;right:auto"></span>
@@ -3149,7 +3167,8 @@ function createEmptyUserState(name){
     gamification:{xp:0,level:0,totalHabitsCompleted:0,perfectDays:0,perfectDaysLog:{},badges:[],gameCleared:false},
     workSession:{
       enabled:true,segmentStart:null,accumulatedMs:0,lastActivity:null,
-      thresholdMs:4*60*60*1000,idleMs:5*60*1000,lastAlertCycle:0,
+      inactivityMs:15*60*1000,thresholdMs:4*60*60*1000,
+      isInactive:false,inactiveSince:null,lastAlertCycle:0,inactivityAlertCycle:0,
     },
     translator:{dir:'pt-en'},
     appVersion:APP_VERSION,
@@ -3666,10 +3685,24 @@ function updateClock(){
   document.getElementById('greeting-main').innerHTML=`<span>${gr}${name}</span>`;
   document.getElementById('greeting-tag').textContent=new Date().toLocaleString('pt-BR',{weekday:'long'}).replace(/^\w/,c=>c.toUpperCase());
   checkAlarms(now);
+  checkInactivityPeriod();
   checkWorkSessionBreak();
+  updateWorkStatusUI();
   pulseClockTick();
 }
 
+const INACTIVITY_OPTIONS=[5,10,15,30,45,60];
+function getInactivityMs(ws){
+  if(!ws) return 15*60*1000;
+  return ws.inactivityMs??ws.idleMs??15*60*1000;
+}
+function formatDurationShort(ms){
+  const totalMin=Math.max(0,Math.floor(ms/60000));
+  if(totalMin<60) return `${totalMin} min`;
+  const h=Math.floor(totalMin/60);
+  const m=totalMin%60;
+  return m?`${h}h ${m}m`:`${h}h`;
+}
 function migrateWorkSession(){
   if(!state.workSession){
     state.workSession={
@@ -3677,12 +3710,27 @@ function migrateWorkSession(){
       segmentStart:null,
       accumulatedMs:0,
       lastActivity:null,
+      inactivityMs:15*60*1000,
       thresholdMs:4*60*60*1000,
-      idleMs:5*60*1000,
+      isInactive:false,
+      inactiveSince:null,
       lastAlertCycle:0,
+      inactivityAlertCycle:0,
     };
     save();
+    return;
   }
+  const ws=state.workSession;
+  let changed=false;
+  if(ws.inactivityMs==null){
+    ws.inactivityMs=ws.idleMs??15*60*1000;
+    if(ws.idleMs!=null){ delete ws.idleMs; }
+    changed=true;
+  }
+  if(ws.isInactive==null){ ws.isInactive=false; changed=true; }
+  if(ws.inactiveSince==null){ ws.inactiveSince=null; changed=true; }
+  if(ws.inactivityAlertCycle==null){ ws.inactivityAlertCycle=0; changed=true; }
+  if(changed) save();
 }
 function ensureWorkSession(){
   migrateWorkSession();
@@ -3705,24 +3753,47 @@ function getWorkElapsedMs(now=Date.now()){
   const ws=state.workSession;
   if(!ws) return 0;
   let total=ws.accumulatedMs||0;
-  const idleMs=ws.idleMs||5*60*1000;
-  if(ws.segmentStart&&ws.lastActivity&&now-ws.lastActivity<=idleMs){
+  const inactivityMs=getInactivityMs(ws);
+  if(!ws.isInactive&&ws.segmentStart&&ws.lastActivity&&now-ws.lastActivity<=inactivityMs){
     total+=now-ws.segmentStart;
   }
   return total;
+}
+function enterInactivity(now=Date.now()){
+  const ws=ensureWorkSession();
+  if(ws.isInactive) return;
+  flushWorkSegment(now);
+  ws.segmentStart=null;
+  ws.isInactive=true;
+  ws.inactiveSince=now;
+  ws.inactivityAlertCycle=(ws.inactivityAlertCycle||0)+1;
+  const mins=Math.round(getInactivityMs(ws)/60000);
+  notifyUser(
+    '😴',
+    'Período de inatividade',
+    `Sem atividade há ${mins} minutos. Sua sessão de foco foi pausada — volte quando quiser.`,
+    'inactivity',
+    'pause',
+    String(ws.inactivityAlertCycle)
+  );
+  save();
+}
+function exitInactivity(){
+  const ws=ensureWorkSession();
+  if(!ws.isInactive) return;
+  ws.isInactive=false;
+  ws.inactiveSince=null;
+  ws.segmentStart=Date.now();
+  showToast('✨','De volta!','Sessão de foco retomada.');
+  save();
 }
 function recordWorkActivity(){
   if(document.hidden) return;
   const ws=ensureWorkSession();
   if(!ws.enabled) return;
   const now=Date.now();
-  const idleMs=ws.idleMs||5*60*1000;
-  if(ws.lastActivity&&now-ws.lastActivity>idleMs){
-    ws.accumulatedMs=0;
-    ws.segmentStart=now;
-  }else if(!ws.segmentStart){
-    ws.segmentStart=now;
-  }
+  if(ws.isInactive) exitInactivity();
+  if(!ws.segmentStart) ws.segmentStart=now;
   ws.lastActivity=now;
   workSessionDirty=true;
 }
@@ -3734,12 +3805,78 @@ function onWorkSessionHidden(){
 function onWorkSessionVisible(){
   const ws=ensureWorkSession();
   const now=Date.now();
-  const idleMs=ws.idleMs||5*60*1000;
-  if(ws.lastActivity&&now-ws.lastActivity>idleMs){
-    ws.accumulatedMs=0;
+  const inactivityMs=getInactivityMs(ws);
+  if(ws.lastActivity&&now-ws.lastActivity>=inactivityMs){
+    enterInactivity(now);
+  }else{
+    recordWorkActivity();
+  }
+}
+function checkInactivityPeriod(){
+  if(document.hidden) return;
+  const ws=ensureWorkSession();
+  if(!ws.enabled||!ws.lastActivity) return;
+  const now=Date.now();
+  if(now-ws.lastActivity>=getInactivityMs(ws)&&!ws.isInactive){
+    enterInactivity(now);
+  }
+}
+function updateWorkStatusUI(){
+  const pill=document.getElementById('work-status-pill');
+  const label=document.getElementById('work-status-label');
+  if(!pill||!label) return;
+  const ws=state.workSession;
+  if(!ws?.enabled){
+    pill.className='work-status-pill disabled';
+    label.textContent='Monitor off';
+    pill.title='Monitor de foco desativado — clique para configurar';
+    return;
+  }
+  const now=Date.now();
+  if(ws.isInactive){
+    const since=ws.inactiveSince||ws.lastActivity||now;
+    pill.className='work-status-pill inactive';
+    label.textContent='Inativo · '+formatDurationShort(now-since);
+    pill.title='Em inatividade — clique para configurar o período';
+    return;
+  }
+  const elapsed=getWorkElapsedMs(now);
+  pill.className='work-status-pill active';
+  label.textContent=elapsed>=60000?'Ativo · '+formatDurationShort(elapsed):'Ativo';
+  pill.title=`Foco: ${formatDurationShort(elapsed)} · inatividade em ${formatDurationShort(getInactivityMs(ws))} — clique para configurar`;
+}
+function openInactivitySettings(){
+  const ws=ensureWorkSession();
+  const mins=Math.round(getInactivityMs(ws)/60000);
+  const elapsed=formatDurationShort(getWorkElapsedMs());
+  document.getElementById('modal-content').innerHTML=`
+    <div class="modal-title">⏸ Período de inatividade</div>
+    <p class="form-hint" style="margin-top:0">Após ficar sem interagir com o app por esse tempo, a sessão de foco pausa e você recebe um aviso. O contador de 4 horas só avança enquanto você está ativo.</p>
+    <div class="form-check-row" style="margin-bottom:14px">
+      <label class="form-check"><input type="checkbox" id="ws-enabled" ${ws.enabled?'checked':''}> Monitorar sessão de trabalho</label>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Inatividade antes de pausar</label>
+      ${selectOptions('ws-inactivity-min',INACTIVITY_OPTIONS.map(m=>({value:String(m),label:`${m} minutos`})),String(mins))}
+    </div>
+    <div class="form-hint">Foco acumulado agora: <strong>${elapsed}</strong> · alerta de pausa a cada <strong>4 horas</strong> ativas.</div>
+    <button type="button" class="btn btn-primary" onclick="saveInactivitySettings()" style="width:100%;justify-content:center;margin-top:14px">Salvar</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function saveInactivitySettings(){
+  const ws=ensureWorkSession();
+  ws.enabled=document.getElementById('ws-enabled')?.checked!==false;
+  const mins=parseInt(document.getElementById('ws-inactivity-min')?.value,10)||15;
+  ws.inactivityMs=mins*60*1000;
+  if(!ws.enabled){
+    ws.isInactive=false;
+    ws.inactiveSince=null;
     ws.segmentStart=null;
   }
-  recordWorkActivity();
+  save();
+  closeModal();
+  updateWorkStatusUI();
+  showToast('⏸','Inatividade',`Período configurado: ${mins} minutos sem atividade.`);
 }
 const WORK_BREAK_TIPS=[
   'Beba um copo d\'água e descanse os olhos por alguns minutos.',
@@ -3750,14 +3887,11 @@ const WORK_BREAK_TIPS=[
 function checkWorkSessionBreak(){
   if(document.hidden) return;
   const ws=ensureWorkSession();
-  if(!ws.enabled||!ws.segmentStart) return;
+  if(!ws.enabled||!ws.segmentStart||ws.isInactive) return;
   const now=Date.now();
-  const idleMs=ws.idleMs||5*60*1000;
-  if(ws.lastActivity&&now-ws.lastActivity>idleMs){
-    ws.accumulatedMs=0;
-    ws.segmentStart=null;
-    workSessionDirty=true;
-    saveWorkSessionIfDirty();
+  const inactivityMs=getInactivityMs(ws);
+  if(ws.lastActivity&&now-ws.lastActivity>=inactivityMs){
+    enterInactivity(now);
     return;
   }
   const threshold=ws.thresholdMs||4*60*60*1000;
