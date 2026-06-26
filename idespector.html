@@ -224,12 +224,11 @@
   #row-dashboard-bottom { grid-template-columns:1fr 1fr; }
   .view-dashboard-compact .view-bar { margin-bottom:16px; }
   .view-dashboard-compact .quick-strip {
-    display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px;
     padding:10px 12px;
   }
   .view-dashboard-compact .quick-strip-btn {
-    flex:1 1 auto; min-width:calc(50% - 4px); justify-content:center;
-    padding:8px 10px; font-size:12px;
+    justify-content:center; padding:12px 8px; font-size:12px; min-height:68px;
   }
   @keyframes viewFadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
 
@@ -733,58 +732,62 @@
   /* CONTENT */
   .content { padding: 28px 32px 48px; max-width:1440px; margin:0 auto; width:100%; flex:1; }
 
-  /* QUICK STRIP — barra de ações SaaS */
+  /* QUICK STRIP — grade 3×2 SaaS */
   .quick-strip {
-    display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;
-    padding:12px 14px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin-bottom:24px;
+    padding:10px;
     background:var(--bg-card);
     border:1px solid var(--border);
     border-radius:var(--radius-md);
   }
   .quick-strip-btn {
-    display:inline-flex; align-items:center; gap:8px;
-    padding:8px 14px; border-radius:var(--radius-sm); cursor:pointer;
-    background:transparent; border:1px solid transparent;
-    color:var(--text-secondary); font-size:13px; font-weight:500;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; padding:14px 10px; min-height:72px;
+    border-radius:var(--radius-sm); cursor:pointer;
+    background:var(--bg-glass); border:1px solid var(--border);
+    color:var(--text-secondary); font-size:12px; font-weight:500;
     font-family:'Inter', system-ui, sans-serif; transition:all .15s ease;
-    flex:0 1 auto; min-width:auto;
-    position:relative; overflow:hidden;
+    position:relative; overflow:hidden; text-align:center;
   }
   .quick-strip-btn:hover {
-    border-color:var(--border);
-    background:var(--bg-glass);
+    border-color:var(--border-bright);
+    background:var(--bg-elevated);
     color:var(--text-primary);
   }
   .quick-strip-btn.primary {
-    background:var(--accent);
-    border-color:var(--accent);
-    color:#fff;
+    background:var(--accent-dim);
+    border-color:rgba(59,130,246,0.35);
+    color:var(--accent);
   }
   .quick-strip-btn.primary:hover {
-    background:var(--accent-hover);
-    border-color:var(--accent-hover);
-    color:#fff;
+    background:rgba(59,130,246,0.18);
+    border-color:rgba(59,130,246,0.5);
+    color:var(--accent);
   }
   .quick-strip-btn .qs-icon {
-    width:16px; height:16px;
+    width:20px; height:20px;
     display:flex; align-items:center; justify-content:center;
     flex-shrink:0; background:none !important;
   }
   .quick-strip-btn .qs-icon svg {
-    width:15px; height:15px; stroke:currentColor; fill:none;
+    width:18px; height:18px; stroke:currentColor; fill:none;
     stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round;
   }
-  .quick-strip-btn .qs-label { display:flex; flex-direction:column; align-items:flex-start; gap:0; text-align:left; }
-  .quick-strip-btn .qs-title { font-size:13px; font-weight:500; color:inherit; }
+  .quick-strip-btn .qs-label { display:flex; flex-direction:column; align-items:center; gap:0; text-align:center; }
+  .quick-strip-btn .qs-title { font-size:12px; font-weight:500; color:inherit; line-height:1.2; }
   .quick-strip-btn .qs-hint { display:none; }
 
   /* GRID */
   .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
   .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:20px; }
   .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
-  #metrics-grid { grid-template-columns:repeat(6,1fr); }
-  @media (max-width:1100px){ #metrics-grid { grid-template-columns:repeat(3,1fr); } }
-  @media (max-width:600px){ #metrics-grid { grid-template-columns:repeat(2,1fr); } }
+  #metrics-grid { grid-template-columns:repeat(7,1fr); }
+  @media (max-width:1200px){ #metrics-grid { grid-template-columns:repeat(4,1fr); } }
+  @media (max-width:900px){ #metrics-grid { grid-template-columns:repeat(3,1fr); } }
+  @media (max-width:520px){ #metrics-grid { grid-template-columns:repeat(2,1fr); } }
 
   /* CARD */
   .card {
@@ -1846,7 +1849,7 @@
     .dashboard-bento, .dashboard-balanced { grid-template-columns:1fr; }
     .foco-layout { flex-direction:column; align-items:flex-start; }
     .foco-time { font-size:44px; letter-spacing:2px; }
-    .view-dashboard-compact .quick-strip { grid-template-columns:repeat(2,1fr); }
+    .view-dashboard-compact .quick-strip { grid-template-columns:repeat(3,1fr); }
   }
   @media(max-width:768px) {
     .sidebar { transform:translateX(-100%); width:var(--sidebar-w); }
@@ -1886,13 +1889,13 @@
 
   /* Ações em listas */
   .list-actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
-  .view-dashboard-compact .quick-strip { flex-wrap:wrap; }
+  .view-dashboard-compact .quick-strip { grid-template-columns:repeat(3,1fr); }
   @media (max-width: 900px) {
-    .quick-strip-btn .qs-hint { display:none; }
-    .quick-strip-btn { min-width:calc(50% - 4px); flex:1 1 calc(50% - 4px); }
+    .quick-strip { grid-template-columns:repeat(2,1fr); }
   }
   @media (max-width: 520px) {
-    .quick-strip-btn { min-width:100%; }
+    .quick-strip { grid-template-columns:repeat(2,1fr); }
+    .quick-strip-btn { min-height:64px; padding:12px 8px; }
     .btn-labeled .btn-text { display:none; }
   }
 
@@ -2656,13 +2659,13 @@
       <span class="qs-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
       <span class="qs-label"><span class="qs-title">Nova tarefa</span></span>
     </button>
-    <button class="quick-strip-btn" onclick="openModal('reminder')">
-      <span class="qs-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
-      <span class="qs-label"><span class="qs-title">Lembrete</span></span>
-    </button>
     <button class="quick-strip-btn" onclick="openModal('event')">
       <span class="qs-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span>
       <span class="qs-label"><span class="qs-title">Evento</span></span>
+    </button>
+    <button class="quick-strip-btn" onclick="openModal('reminder')">
+      <span class="qs-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+      <span class="qs-label"><span class="qs-title">Lembrete</span></span>
     </button>
     <button class="quick-strip-btn" onclick="expandHeaderChat(true)">
       <span class="qs-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
