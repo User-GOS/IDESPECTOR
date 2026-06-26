@@ -221,9 +221,20 @@
     min-height:auto !important;
     height:auto;
     align-self:start;
-    padding:12px 18px 10px;
+    padding:10px 18px 8px;
   }
-  #clock-card .card-header { margin-bottom:4px; padding-bottom:8px; }
+  #clock-card .card-header {
+    margin-bottom:0;
+    padding-bottom:6px;
+    border-bottom-width:1px;
+  }
+  #clock-card .foco-layout {
+    display:block; padding:0; margin:-2px 0 0; flex:0 0 auto;
+  }
+  #clock-card .foco-info { text-align:left; width:100%; }
+  #clock-card .foco-time {
+    font-size:40px; margin:0 0 2px; line-height:1;
+  }
   .card-body-scroll {
     flex:1; overflow-y:auto; min-height:100px; max-height:320px;
     padding-right:4px;
@@ -824,13 +835,6 @@
   .card-title .dot { display:none; }
 
   /* FOCO CARD */
-  #clock-card .foco-layout {
-    display:block; padding:0; margin:0; flex:0 0 auto;
-  }
-  #clock-card .foco-info { text-align:left; width:100%; }
-  #clock-card .foco-time {
-    font-size:40px; margin-bottom:4px;
-  }
   #clock-card .foco-date { font-size:13px; }
   #clock-card .foco-tz { margin-top:2px; font-size:11px; }
   .foco-layout { display:flex; align-items:center; justify-content:center; padding:8px 0; }
