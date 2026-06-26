@@ -983,6 +983,17 @@
   }
   .task-item.overdue { border-color:rgba(248,113,113,0.35); background:rgba(248,113,113,0.04); }
   .task-item.overdue .task-meta { color:var(--danger); background:rgba(248,113,113,0.1); }
+  .task-item.important { border-color:rgba(251,191,36,0.28); }
+  .task-important { font-size:12px; margin-right:4px; }
+  .task-tag {
+    font-size:10px; font-weight:600; padding:2px 7px; border-radius:999px;
+    background:var(--accent-dim); color:var(--accent-2); border:1px solid rgba(59,130,246,0.2);
+  }
+  .task-link {
+    font-size:11px; font-weight:600; color:var(--accent-2); text-decoration:none;
+    padding:3px 8px; border-radius:6px; background:var(--accent-dim);
+  }
+  .task-link:hover { text-decoration:underline; }
   .task-actions {
     grid-column:3; grid-row:1 / 3;
     align-self:center;
@@ -1207,6 +1218,18 @@
   .modal-close:hover { color:var(--danger); border-color:var(--danger); }
   .form-label { font-size:12px; color:var(--text-muted); margin-bottom:6px; font-weight:500; display:block; }
   .form-group { margin-bottom:14px; }
+  .form-section-label {
+    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text-muted); margin:16px 0 10px; padding-top:12px;
+    border-top:1px solid var(--border);
+  }
+  .form-check-row { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+  .form-check {
+    display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary);
+    cursor:pointer; user-select:none;
+  }
+  .form-check input { accent-color:var(--accent); width:15px; height:15px; }
+  .modal.task-modal { width:540px; max-height:min(92vh,780px); overflow-y:auto; padding:24px 28px 28px; }
 
   /* NOTIFICATION TOAST */
   .toast-container {
@@ -2965,6 +2988,21 @@ function formatTaskDue(t){
   const d=new Date(p[0],p[1]-1,p[2]).toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
   return t.dueTime?`${d} às ${t.dueTime}`:d;
 }
+function formatEstimateMin(min){
+  if(!min) return '';
+  if(min<60) return `${min} min`;
+  const h=Math.floor(min/60),m=min%60;
+  return m?`${h}h ${m}min`:`${h}h`;
+}
+function recurrenceLabel(r){
+  return ({daily:'Diária',weekly:'Semanal',monthly:'Mensal'})[r]||r;
+}
+function kanbanColumnLabel(col){
+  return ({todo:'A fazer',doing:'Fazendo',done:'Concluído'})[col]||'A fazer';
+}
+function parseTaskTags(raw){
+  return String(raw||'').split(',').map(s=>s.trim()).filter(Boolean).slice(0,8);
+}
 function priorityLabel(p){
   return ({baixa:'Baixa',media:'Média',alta:'Alta',critica:'Crítica'})[p]||'Média';
 }
@@ -4588,6 +4626,8 @@ function renderKanban(){
           <div class="kanban-card-meta">
             <span class="priority-badge p-${t.priority||'media'}">${priorityLabel(t.priority||'media')}</span>
             <span class="cat-badge">${t.cat||'Geral'}</span>
+            ${t.estimateMin?`<span class="cat-badge">⏱ ${formatEstimateMin(t.estimateMin)}</span>`:''}
+            ${t.important?`<span class="cat-badge">⭐</span>`:''}
           </div>
           <div class="kanban-move" onclick="event.stopPropagation()">
             ${col.id!=='todo'?`<button class="btn btn-ghost btn-xs" onclick="moveTaskColumn(${t.id},'${col.id==='doing'?'todo':'doing'}')">←</button>`:''}
@@ -4671,17 +4711,23 @@ function renderTasks(){
     return;
   }
   el.innerHTML=filterBar+list.map(t=>`
-    <div class="task-item ${t.done?'done':''} ${isTaskOverdue(t)?'overdue':''}">
+    <div class="task-item ${t.done?'done':''} ${isTaskOverdue(t)?'overdue':''} ${t.important?'important':''}">
       <div class="task-check ${t.done?'checked':''}" onclick="toggleTask(${t.id})" title="${t.done?'Marcar pendente':'Concluir'}">
         ${t.done?'<span style="color:#fff;font-size:11px;">✓</span>':''}
       </div>
       <div class="task-content clickable" onclick="openEditTask(${t.id})" title="Clique para editar">
-        <div class="task-text">${t.text}</div>
+        <div class="task-text">${t.important?'<span class="task-important">⭐</span>':''}${t.text}</div>
         ${t.notes?`<div class="task-notes">${t.notes}</div>`:''}
         <div class="task-footer">
           ${t.dueDate?`<span class="task-meta">${isTaskOverdue(t)?'⚠️ Atrasada · ':'📅 '}${formatTaskDue(t)}</span>`:''}
+          ${t.estimateMin?`<span class="task-meta">⏱ ${formatEstimateMin(t.estimateMin)}</span>`:''}
+          ${t.assignee?`<span class="task-meta">👤 ${escHtml(t.assignee)}</span>`:''}
+          ${t.recurrence?`<span class="task-meta">🔁 ${recurrenceLabel(t.recurrence)}</span>`:''}
           <span class="priority-badge p-${t.priority||'media'}">${priorityLabel(t.priority||'media')}</span>
           <span class="cat-badge">${t.cat}</span>
+          ${(t.column&&t.column!=='todo')?`<span class="cat-badge">${kanbanColumnLabel(t.column)}</span>`:''}
+          ${(t.tags||[]).map(tag=>`<span class="task-tag">${escHtml(tag)}</span>`).join('')}
+          ${t.link?`<a class="task-link" href="${escHtml(t.link)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">🔗 Abrir link</a>`:''}
         </div>
       </div>
       <div class="task-actions list-actions">
@@ -4939,6 +4985,18 @@ const TASK_CATEGORIES=[
   'Trabalho','Igreja','Estudos','Saúde','Pessoal','Casa','Finanças','Família',
   'Projetos','Compras','Viagem','Lazer','Reuniões','Marketing','Outros'
 ];
+const TASK_ESTIMATES=[
+  {value:'',label:'Sem estimativa'},
+  {value:'15',label:'15 min'},{value:'30',label:'30 min'},{value:'45',label:'45 min'},
+  {value:'60',label:'1 hora'},{value:'90',label:'1h 30min'},{value:'120',label:'2 horas'},
+  {value:'180',label:'3 horas'},{value:'240',label:'4 horas'},{value:'480',label:'8 horas'},
+];
+const TASK_STATUSES=[
+  {value:'todo',label:'📋 A fazer'},{value:'doing',label:'⚡ Fazendo'},{value:'done',label:'✅ Concluído'},
+];
+const TASK_RECURRENCE=[
+  {value:'',label:'Nenhuma'},{value:'daily',label:'Diária'},{value:'weekly',label:'Semanal'},{value:'monthly',label:'Mensal'},
+];
 
 let editingTaskId=null;
 let editingEventId=null;
@@ -4987,8 +5045,45 @@ function fillTaskForm(task){
   document.getElementById('m-task-notes').value=task.notes||'';
   document.getElementById('m-task-due').value=task.dueDate||'';
   document.getElementById('m-task-due-time').value=task.dueTime||'';
+  document.getElementById('m-task-assignee').value=task.assignee||'';
+  document.getElementById('m-task-tags').value=(task.tags||[]).join(', ');
+  document.getElementById('m-task-link').value=task.link||'';
+  document.getElementById('m-task-important').checked=!!task.important;
+  document.getElementById('m-task-remind').checked=false;
   setCustomSelect('m-task-cat',task.cat||'Trabalho');
   setCustomSelect('m-task-pri',task.priority||'media');
+  setCustomSelect('m-task-status',task.column|| (task.done?'done':'todo'));
+  setCustomSelect('m-task-estimate',task.estimateMin?String(task.estimateMin):'');
+  setCustomSelect('m-task-recurrence',task.recurrence||'');
+}
+
+function applyTaskExtras(task){
+  const column=document.getElementById('m-task-status')?.value||'todo';
+  const estimate=parseInt(document.getElementById('m-task-estimate')?.value,10);
+  const assignee=document.getElementById('m-task-assignee')?.value.trim()||'';
+  const tags=parseTaskTags(document.getElementById('m-task-tags')?.value||'');
+  const link=document.getElementById('m-task-link')?.value.trim()||'';
+  const recurrence=document.getElementById('m-task-recurrence')?.value||'';
+  const important=!!document.getElementById('m-task-important')?.checked;
+  task.column=column;
+  task.done=column==='done';
+  if(estimate>0) task.estimateMin=estimate; else delete task.estimateMin;
+  if(assignee) task.assignee=assignee; else delete task.assignee;
+  if(tags.length) task.tags=tags; else delete task.tags;
+  if(link) task.link=link; else delete task.link;
+  if(recurrence) task.recurrence=recurrence; else delete task.recurrence;
+  if(important) task.important=true; else delete task.important;
+}
+
+function maybeCreateTaskReminder(text,dueDate,dueTime,priority){
+  if(!document.getElementById('m-task-remind')?.checked||!dueDate) return;
+  state.reminders.push({
+    id:Date.now()+Math.floor(Math.random()*1000),
+    text:`Tarefa: ${text}`,
+    date:dueDate,
+    time:dueTime||'09:00',
+    priority:priority||'media',
+  });
 }
 
 function openEditTask(id){
@@ -5059,13 +5154,34 @@ function openModal(type,editId){
             {value:'alta',label:'🟠 Alta'},{value:'critica',label:'🔴 Crítica'}
           ],'media')}</div>
       </div>
+      <div class="form-section-label">Organização</div>
+      <div class="input-row" style="margin-bottom:0">
+        <div class="form-group" style="flex:1"><label class="form-label">Status</label>
+          ${selectOptions('m-task-status',TASK_STATUSES,'todo')}</div>
+        <div class="form-group" style="flex:1"><label class="form-label">Tempo estimado</label>
+          ${selectOptions('m-task-estimate',TASK_ESTIMATES,'')}</div>
+      </div>
       <div class="input-row" style="margin-bottom:0">
         <div class="form-group" style="flex:1"><label class="form-label">Prazo (data)</label>
           <input class="input-field" id="m-task-due" type="date" value="${isEdit?'':todayStr()}"></div>
         <div class="form-group" style="flex:1"><label class="form-label">Horário limite</label>
           <input class="input-field" id="m-task-due-time" type="time"></div>
       </div>
-      <div class="form-hint">Prazo e horário são opcionais.</div>
+      <div class="input-row" style="margin-bottom:0">
+        <div class="form-group" style="flex:1"><label class="form-label">Responsável</label>
+          <input class="input-field" id="m-task-assignee" placeholder="Nome ou equipe"></div>
+        <div class="form-group" style="flex:1"><label class="form-label">Recorrência</label>
+          ${selectOptions('m-task-recurrence',TASK_RECURRENCE,'')}</div>
+      </div>
+      <div class="form-group"><label class="form-label">Etiquetas</label>
+        <input class="input-field" id="m-task-tags" placeholder="urgente, reunião, cliente (separadas por vírgula)"></div>
+      <div class="form-group"><label class="form-label">Link relacionado</label>
+        <input class="input-field" id="m-task-link" type="url" placeholder="https://..."></div>
+      <div class="form-check-row">
+        <label class="form-check"><input type="checkbox" id="m-task-important"> Marcar como importante</label>
+        <label class="form-check"><input type="checkbox" id="m-task-remind"> Criar lembrete automático no prazo</label>
+      </div>
+      <div class="form-hint">Prazo, horário e lembrete são opcionais.</div>
       <button class="btn btn-primary" onclick="saveTask()" style="width:100%;justify-content:center;margin-top:14px">${isEdit?'Salvar Alterações':'Adicionar Tarefa'}</button>`,
 
     reminder:`<div class="modal-title">🔔 ${isEditRem?'Editar Lembrete':'Novo Lembrete'}</div>
@@ -5168,10 +5284,13 @@ function openModal(type,editId){
       document.getElementById('m-goal-deadline').value=g.deadline||'';
     }
   }
+  const modalBox=document.getElementById('modal-box');
+  if(modalBox) modalBox.classList.toggle('task-modal', type==='task');
   overlay.classList.add('open');
 }
 function closeModal(){
   closeCustomSelects();
+  document.getElementById('modal-box')?.classList.remove('task-modal');
   editingTaskId=null;
   editingEventId=null;
   editingReminderId=null;
@@ -5200,6 +5319,7 @@ function saveTask(){
     if(notes) t.notes=notes; else delete t.notes;
     if(dueDate) t.dueDate=dueDate; else delete t.dueDate;
     if(dueTime) t.dueTime=dueTime; else delete t.dueTime;
+    applyTaskExtras(t);
     save();renderAll();closeModal();
     const extra=dueDate?` · ${formatTaskDue(t)}`:'';
     showToast('✏️','Tarefa atualizada',text+extra);
@@ -5209,6 +5329,8 @@ function saveTask(){
   if(notes) task.notes=notes;
   if(dueDate) task.dueDate=dueDate;
   if(dueTime) task.dueTime=dueTime;
+  applyTaskExtras(task);
+  maybeCreateTaskReminder(text,dueDate,dueTime,priority);
   state.tasks.push(task);
   save();renderAll();closeModal();
   const extra=dueDate?` · ${formatTaskDue(task)}`:'';
