@@ -3512,7 +3512,7 @@
     <div class="ai-chat-settings" id="ai-chat-settings">
       <label for="ai-api-key">Chave OpenAI (opcional, só no seu navegador)</label>
       <input class="input-field" type="password" id="ai-api-key" placeholder="sk-..." autocomplete="off" onchange="saveAiSettings()">
-      <p class="ai-chat-settings-hint">Use se o servidor não tiver OPENAI_API_KEY. A chave fica salva localmente na sua conta.</p>
+      <p class="ai-chat-settings-hint">Chave OpenAI (sk-…). Necessária para perguntas gerais. Comandos do painel funcionam sem chave — digite "ajuda".</p>
     </div>
     <form class="ai-chat-compose" id="ai-chat-form" onsubmit="submitAiChat(event)">
       <textarea class="ai-chat-input" id="ai-chat-input" rows="1" placeholder="Pergunte algo..." maxlength="2000" aria-label="Mensagem para a IA"></textarea>
@@ -4248,7 +4248,7 @@ function renderAiChatMessages(){
   if(!el) return;
   const msgs=state.chat||[];
   if(!msgs.length){
-    el.innerHTML=`<div class="ai-chat-msg system">Olá! Sou o assistente do IDespector. Posso ajudar com produtividade, tarefas e organização.</div>`;
+    el.innerHTML=`<div class="ai-chat-msg system">Olá! Sou o assistente do IDespector. Pergunte sobre seu dia, tarefas e hábitos — ou digite <strong>ajuda</strong> para ver comandos. Para perguntas gerais, configure a chave OpenAI em ⚙.</div>`;
     return;
   }
   el.innerHTML=msgs.map(m=>{
@@ -4291,24 +4291,132 @@ function clearAiChat(){
   save();
   renderAiChatMessages();
 }
+function aiNorm(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+function aiParseTime(text){
+  const m=aiNorm(text).match(/(?:as\s+)?(\d{1,2})(?:[:h](\d{2}))?\s*h?/);
+  if(!m) return null;
+  let h=parseInt(m[1],10);
+  let min=m[2]?parseInt(m[2],10):0;
+  if(h<0||h>23||min<0||min>59) return null;
+  return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+}
+function aiHelpText(){
+  return `Comandos que funcionam offline:\n\n• "o que tenho hoje?" — resumo do dia\n• "tarefas pendentes"\n• "criar alarme para 20h"\n• "criar lembrete pagar conta às 18h"\n• "abrir agenda" / tarefas / notas / lembretes\n• "clima" ou "notícias"\n\nPara perguntas gerais (esportes, estudos, etc.), configure a chave OpenAI em ⚙ ou peça ao admin para ativar OPENAI_API_KEY / GROQ_API_KEY no servidor.`;
+}
+function tryLocalAiReply(text){
+  const q=aiNorm(text);
+  if(!q) return null;
+  if(/^(ajuda|help|comandos|\?)$/.test(q)) return aiHelpText();
+  if(/tarefas?\s*(pendentes?)?|^pendentes$|quantas tarefas/.test(q)){
+    const pending=state.tasks?.filter(t=>!t.done)||[];
+    if(!pending.length) return 'Você não tem tarefas pendentes. Parabéns!';
+    const list=pending.slice(0,8).map(t=>`• ${t.text}`).join('\n');
+    const extra=pending.length>8?`\n… e mais ${pending.length-8}.`:'';
+    return `Você tem ${pending.length} tarefa${pending.length>1?'s':''} pendente${pending.length>1?'s':''}:\n${list}${extra}`;
+  }
+  if(/o que tenho|resumo.*dia|minha agenda|agenda de hoje/.test(q)){
+    const today=todayStr();
+    const pending=state.tasks?.filter(t=>!t.done).length||0;
+    const ev=eventsOnDate(today);
+    const rem=state.reminders?.filter(r=>r.date===today)||[];
+    const habitsDone=typeof habitsCompletedToday==='function'?habitsCompletedToday():0;
+    const habitsTotal=state.habits?.length||0;
+    let out=`Resumo de hoje (${formatNewsDateLabel(today)}):\n\n`;
+    out+=`• Tarefas pendentes: ${pending}\n`;
+    out+=`• Hábitos: ${habitsDone}/${habitsTotal}\n`;
+    out+=`• Lembretes: ${rem.length}\n`;
+    out+=`• Compromissos: ${ev.length}`;
+    if(ev.length){
+      out+='\n\nCompromissos:\n'+ev.slice(0,5).map(e=>`• ${e.time} — ${e.title}`).join('\n');
+    }
+    if(rem.length){
+      out+='\n\nLembretes:\n'+rem.slice(0,5).map(r=>`• ${r.time} — ${r.text}`).join('\n');
+    }
+    return out;
+  }
+  if(/criar alarme|alarme para|despertar/.test(q)){
+    const time=aiParseTime(q);
+    if(!time) return 'Informe o horário. Ex.: "criar alarme para 20h" ou "alarme para 07:30".';
+    const labelMatch=text.match(/(?:para|as)\s+\d{1,2}(?::\d{2})?\s*h?\s*(.+)$/i);
+    const label=(labelMatch?.[1]||'Alarme').trim().slice(0,60)||'Alarme';
+    state.alarms.push({id:Date.now(),time,label,on:true});
+    save();renderAlarms();updateMetrics();
+    return `Alarme criado para ${time} — "${label}".`;
+  }
+  if(/criar lembrete|lembrete para|lembrar de/.test(q)){
+    const time=aiParseTime(q)||'09:00';
+    const today=todayStr();
+    let body=text.replace(/criar lembrete|lembrete para|lembrar de/ig,'').trim();
+    body=body.replace(/(?:as|para)\s+\d{1,2}(?::\d{2})?\s*h?/ig,'').trim();
+    if(!body) return 'Diga o que lembrar. Ex.: "criar lembrete pagar luz às 18h".';
+    state.reminders.push({id:Date.now(),text:body.slice(0,120),date:today,time,priority:'media'});
+    save();renderReminders();updateMetrics();
+    return `Lembrete criado para hoje às ${time}: "${body.slice(0,80)}".`;
+  }
+  const navMap={
+    tarefas:'tasks',agenda:'agenda',notas:'notes',lembretes:'reminders',
+    alarmes:'alarms',habitos:'productivity',produtividade:'productivity',tradutor:'translator',
+  };
+  const navMatch=q.match(/(?:abrir|ir para|mostrar|ver)\s+([a-z\s]+)/);
+  if(navMatch){
+    const key=navMatch[1].trim().split(/\s+/)[0];
+    const view=navMap[key];
+    if(view){
+      setTimeout(()=>navTo(view),120);
+      return `Abrindo ${key}…`;
+    }
+  }
+  if(/^clima|^tempo|^previsao/.test(q)){
+    loadWeather(true);
+    const w=weatherCache?.current;
+    if(w) return `São Paulo agora: ${w.temp}° — ${w.label}. Umidade ${w.humidity}%, vento ${w.windKmh} km/h.`;
+    return 'Carregando previsão… veja o card "Previsão do tempo" no dashboard.';
+  }
+  if(/^noticias|^noticia/.test(q)){
+    loadDailyNews(true);
+    const items=dailyNewsCache?.items;
+    if(items?.length){
+      return 'Notícias de SP:\n'+items.slice(0,4).map(it=>`• ${it.title}`).join('\n');
+    }
+    return 'Carregando notícias de SP…';
+  }
+  if(/nao entendi|nao sei o que/.test(q)) return aiHelpText();
+  return null;
+}
 async function fetchAiReply(userText){
+  const local=tryLocalAiReply(userText);
+  if(local) return local;
   const payload={
     messages:(state.chat||[]).map(m=>({role:m.role,content:m.content})),
     context:buildAiPanelContext(),
   };
   const key=(state.ai?.apiKey||'').trim();
   if(key) payload.apiKey=key;
-  const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
-  const timer=ctrl?setTimeout(()=>ctrl.abort(),50000):null;
-  const res=await fetch('/api/chat',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(payload),
-    ...(ctrl?{signal:ctrl.signal}:{}),
-  });
-  if(timer) clearTimeout(timer);
-  const data=await res.json().catch(()=>({}));
-  if(!res.ok||!data.ok) throw new Error(data?.error||'Falha ao obter resposta da IA');
+  let res,data;
+  try{
+    const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+    const timer=ctrl?setTimeout(()=>ctrl.abort(),50000):null;
+    res=await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
+      ...(ctrl?{signal:ctrl.signal}:{}),
+    });
+    if(timer) clearTimeout(timer);
+    data=await res.json().catch(()=>({}));
+  }catch(err){
+    if(err?.name==='AbortError') throw new Error('A IA demorou demais. Tente uma pergunta mais curta.');
+    throw new Error('Sem conexão com o servidor. Verifique sua internet ou abra via iniciar.bat / Vercel.');
+  }
+  if(!res.ok||!data.ok){
+    const errMsg=data?.error
+      ||(res.status===503?'IA não configurada no servidor. Use ⚙ para colar sua chave OpenAI, ou peça OPENAI_API_KEY / GROQ_API_KEY na Vercel.')
+      ||(res.status===404?'Rota /api/chat não encontrada. Atualize o deploy.')
+      :`Erro do servidor (${res.status}).`;
+    throw new Error(errMsg);
+  }
   return data.reply;
 }
 async function submitAiChat(e){

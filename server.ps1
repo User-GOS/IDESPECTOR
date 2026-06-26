@@ -410,10 +410,11 @@ while ($listener.IsListening) {
 
         if ($path -eq "/api/chat" -and $request.HttpMethod -eq "POST") {
             $data = Read-JsonBody $request
-            $apiKey = [string]$data.apiKey
-            if ([string]::IsNullOrWhiteSpace($apiKey)) { $apiKey = [string]$env:OPENAI_API_KEY }
-            if ([string]::IsNullOrWhiteSpace($apiKey)) {
-                Send-Json $response 503 @{ ok = $false; error = "IA nao configurada. Defina OPENAI_API_KEY ou informe apiKey no corpo." }
+            $userKey = [string]$data.apiKey
+            $openAiKey = if ($userKey) { $userKey } else { [string]$env:OPENAI_API_KEY }
+            $groqKey = [string]$env:GROQ_API_KEY
+            if ([string]::IsNullOrWhiteSpace($openAiKey) -and [string]::IsNullOrWhiteSpace($groqKey)) {
+                Send-Json $response 503 @{ ok = $false; error = "IA nao configurada. Defina OPENAI_API_KEY ou GROQ_API_KEY, ou informe apiKey no corpo." }
                 continue
             }
             $messages = @()
@@ -424,7 +425,7 @@ while ($listener.IsListening) {
                 continue
             }
             $context = [string]$data.context
-            $system = "Voce e o assistente IA do IDespector. Responda em portugues do Brasil, de forma clara e objetiva."
+            $system = "Voce e o assistente IA do IDespector. Responda em portugues do Brasil. Ajude com produtividade e perguntas gerais."
             if (-not [string]::IsNullOrWhiteSpace($context)) {
                 $system = "$system`n`nContexto atual do painel:`n$context"
             }
@@ -434,8 +435,7 @@ while ($listener.IsListening) {
                     $openAiMessages += @{ role = [string]$m.role; content = [string]$m.content }
                 }
             }
-            try {
-                $model = if ($env:OPENAI_MODEL) { [string]$env:OPENAI_MODEL } else { "gpt-4o-mini" }
+            function Invoke-ChatProvider($baseUrl, $apiKey, $model) {
                 $payload = @{
                     model = $model
                     messages = $openAiMessages
@@ -446,13 +446,30 @@ while ($listener.IsListening) {
                     Authorization = "Bearer $apiKey"
                     "Content-Type" = "application/json"
                 }
-                $resp = Invoke-RestMethod -Uri "https://api.openai.com/v1/chat/completions" -Method Post -Headers $headers -Body $payload -TimeoutSec 45
+                $resp = Invoke-RestMethod -Uri "$baseUrl/chat/completions" -Method Post -Headers $headers -Body $payload -TimeoutSec 45
                 $reply = [string]$resp.choices[0].message.content
-                if ([string]::IsNullOrWhiteSpace($reply)) {
-                    Send-Json $response 502 @{ ok = $false; error = "Resposta vazia da IA" }
-                    continue
+                if ([string]::IsNullOrWhiteSpace($reply)) { throw "Resposta vazia da IA" }
+                return @{ reply = $reply.Trim(); model = $model }
+            }
+            try {
+                $result = $null
+                if (-not [string]::IsNullOrWhiteSpace($openAiKey)) {
+                    try {
+                        $model = if ($env:OPENAI_MODEL) { [string]$env:OPENAI_MODEL } else { "gpt-4o-mini" }
+                        $result = Invoke-ChatProvider "https://api.openai.com/v1" $openAiKey $model
+                    } catch {
+                        if ([string]::IsNullOrWhiteSpace($groqKey) -or $userKey) { throw }
+                    }
                 }
-                Send-Json $response 200 @{ ok = $true; reply = $reply.Trim(); model = $model }
+                if (-not $result -and -not [string]::IsNullOrWhiteSpace($groqKey)) {
+                    $gModel = if ($env:GROQ_MODEL) { [string]$env:GROQ_MODEL } else { "llama-3.3-70b-versatile" }
+                    $result = Invoke-ChatProvider "https://api.groq.com/openai/v1" $groqKey $gModel
+                }
+                if ($result) {
+                    Send-Json $response 200 @{ ok = $true; reply = $result.reply; model = $result.model }
+                } else {
+                    Send-Json $response 503 @{ ok = $false; error = "IA nao configurada" }
+                }
             } catch {
                 Send-Json $response 502 @{ ok = $false; error = "Erro ao conversar com a IA: $($_.Exception.Message)" }
             }
